@@ -40,7 +40,8 @@ type Server struct {
 	conf    config.Config // Primary source of truth for server configuration
 	srv     *http.Server  // The HTTP server configuration for handling requests
 	router  *gin.Engine   // The gin router for mapping endpoints to handlers
-	healthy bool          // TODO: replace with probez health service
+	healthy bool          // Indicates that the service is online and healthy
+	ready   bool          // Indicates that the service is ready to accept requests
 	started time.Time     // The timestamp that the server was started (for uptime)
 	url     *url.URL      // The endpoint that the server is hosted on
 	echan   chan error    // Sending errors down this channel stops the server (is fatal)
@@ -118,6 +119,7 @@ func (s *Server) Serve() (err error) {
 	}
 
 	// Set the URL from the listener and indcate the server has started
+	// NOTE: no locking is necessary since no requests can come in
 	s.setURL(sock.Addr())
 	s.started = time.Now()
 	s.healthy = true
@@ -130,23 +132,31 @@ func (s *Server) Serve() (err error) {
 		s.echan <- nil
 	}()
 
+	s.SetReady(true)
 	log.Info().Str("listen", s.URL()).Str("version", pkg.Version()).Msg("rtnl server started")
 	return <-s.echan
 }
 
 func (s *Server) Shutdown(ctx context.Context) (err error) {
-	s.Lock()
-	s.healthy = false
-	s.Unlock()
+	// Set ready to false to prevent additional requests
+	s.SetReady(false)
+	defer s.SetHealthy(false)
 
 	s.srv.SetKeepAlivesEnabled(false)
 	if err = s.srv.Shutdown(ctx); err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func (s *Server) Routes(router *gin.Engine) (err error) {
+	// Kubernetes probe endpoints -- add routes before middleware to ensure that these
+	// endpoints are not logged nor subject to other handling.
+	router.GET("/healthz", s.Healthz)
+	router.GET("/livez", s.Healthz)
+	router.GET("/readyz", s.Readyz)
+
 	// Setup CORS configuration
 	corsConf := cors.Config{
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"},
@@ -217,11 +227,4 @@ func (s *Server) Uptime() time.Duration {
 	s.RLock()
 	defer s.RUnlock()
 	return time.Since(s.started)
-}
-
-// Determines if the server is healthy or not
-func (s *Server) IsHealthy() bool {
-	s.RLock()
-	defer s.RUnlock()
-	return s.healthy
 }

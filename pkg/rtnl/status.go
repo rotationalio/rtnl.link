@@ -28,7 +28,7 @@ func (s *Server) Available() gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		// Check the health status
-		if s.conf.Maintenance || !s.IsHealthy() {
+		if s.conf.Maintenance || !s.IsReady() {
 			out := api.StatusReply{
 				Status:  status,
 				Uptime:  s.Uptime().String(),
