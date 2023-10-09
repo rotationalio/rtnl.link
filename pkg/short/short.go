@@ -13,7 +13,6 @@ func URL(rawURL string) (_ string, err error) {
 	if u, err = url.Parse(rawURL); err != nil {
 		return "", err
 	}
-
 	return Shorten(u.String())
 }
 

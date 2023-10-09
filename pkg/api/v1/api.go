@@ -1,6 +1,10 @@
 package api
 
-import "context"
+import (
+	"context"
+	"strings"
+	"time"
+)
 
 //===========================================================================
 // Service Interface
@@ -9,6 +13,11 @@ import "context"
 type QuarterdeckClient interface {
 	// Unauthenticated endpoints
 	Status(context.Context) (*StatusReply, error)
+
+	// URL Management
+	ShortenURL(context.Context, *LongURL) (*ShortURL, error)
+	ShortURLInfo(context.Context, string) (*ShortURL, error)
+	DeleteShortURL(context.Context, string) error
 }
 
 //===========================================================================
@@ -33,4 +42,67 @@ type StatusReply struct {
 type PageQuery struct {
 	PageSize      int    `json:"page_size" url:"page_size,omitempty" form:"page_size"`
 	NextPageToken string `json:"next_page_token" url:"next_page_token,omitempty" form:"next_page_token"`
+}
+
+//===========================================================================
+// URL Shortening Endpoints
+//===========================================================================
+
+type LongURL struct {
+	URL     string `json:"url"`
+	Expires string `json:"expires,omitempty"`
+}
+
+type ShortURL struct {
+	URL     string    `json:"url"`
+	AltURL  string    `json:"alt_url,omitempty"`
+	Visits  uint64    `json:"visits,omitempty"`
+	Expires time.Time `json:"expires,omitempty"`
+}
+
+//===========================================================================
+// API Input Validation
+//===========================================================================
+
+func (u *LongURL) Validate() error {
+	u.URL = strings.TrimSpace(u.URL)
+	u.Expires = strings.TrimSpace(u.Expires)
+
+	if u.URL == "" {
+		return ErrMissingURL
+	}
+
+	if u.Expires != "" {
+		ts, err := u.ExpiresAt()
+		if err != nil {
+			return err
+		}
+
+		if !ts.After(time.Now()) {
+			return ErrInvalidExpires
+		}
+	}
+
+	return nil
+}
+
+var dateFormats = []string{
+	time.RFC3339,
+	"2006-01-02",
+	"2006-01-02 15:04:05",
+	"2006-01-02 15:04:05Z",
+}
+
+func (u *LongURL) ExpiresAt() (time.Time, error) {
+	if u.Expires == "" {
+		return time.Time{}, nil
+	}
+
+	for _, layout := range dateFormats {
+		if ts, err := time.Parse(layout, u.Expires); err == nil {
+			return ts, nil
+		}
+	}
+
+	return time.Time{}, ErrCannotParseExpires
 }

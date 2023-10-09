@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 )
 
@@ -9,6 +10,13 @@ var (
 	ErrUnsuccessfulReply = Reply{Success: false}
 	ErrNotFoundReply     = Reply{Success: false, Error: "resource not found"}
 	ErrNotAllowedReply   = Reply{Success: false, Error: "method not allowed"}
+	ErrUnparsable        = Reply{Success: false, Error: "could not parse json request"}
+)
+
+var (
+	ErrMissingURL         = errors.New("a url is required for shortening")
+	ErrCannotParseExpires = errors.New("expires must be a timestamp in the form of YYYY-MM-DD or YYYY-MM-DD HH:MM:SS")
+	ErrInvalidExpires     = errors.New("expiration must be valid timestamp in the future")
 )
 
 // Construct a new response for an error or simply return unsuccessful.
