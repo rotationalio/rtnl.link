@@ -195,7 +195,13 @@ func (s *Server) Routes(router *gin.Engine) (err error) {
 	{
 		// Heartbeat route (no authentication required)
 		v1.GET("/status", s.Status)
+		v1.POST("/shorten", s.ShortenURL)
 	}
+
+	// Permenant Routes
+	router.GET("/:id", s.Redirect)
+	router.DELETE("/:id", s.DeleteShortURL)
+	router.GET("/:id/info", s.ShortURLInfo)
 
 	// NotFound and NotAllowed routes
 	router.NoRoute(s.NotFound)
