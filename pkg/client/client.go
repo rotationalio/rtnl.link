@@ -16,13 +16,14 @@ import (
 )
 
 // New creates a new API v1 client that implements the Service interface.
-func New(endpoint string) (_ api.Service, err error) {
+func New(endpoint, apiKey string) (_ api.Service, err error) {
 	c := &APIv1{
 		client: &http.Client{
 			Transport:     nil,
 			CheckRedirect: nil,
 			Timeout:       30 * time.Second,
 		},
+		apiKey: apiKey,
 	}
 
 	if c.endpoint, err = url.Parse(endpoint); err != nil {
@@ -39,6 +40,7 @@ func New(endpoint string) (_ api.Service, err error) {
 // APIv1 implements the Service interface
 type APIv1 struct {
 	endpoint *url.URL     // the base url for all requests
+	apiKey   string       // the API key for authorized requests
 	client   *http.Client // used to make http requests to the server
 }
 
@@ -160,6 +162,11 @@ func (s *APIv1) NewRequest(ctx context.Context, method, path string, data interf
 	req.Header.Add("Accept-Language", acceptLang)
 	req.Header.Add("Accept-Encoding", acceptEncode)
 	req.Header.Add("Content-Type", contentType)
+
+	// Add API Key if available
+	if s.apiKey != "" {
+		req.Header.Add("Authorization", "Bearer "+s.apiKey)
+	}
 
 	// Add CSRF protection if its available
 	if s.client.Jar != nil {

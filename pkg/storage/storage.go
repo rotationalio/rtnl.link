@@ -12,14 +12,17 @@ import (
 type Storage interface {
 	io.Closer
 	Save(*ShortURL) error
-	Load(key uint64) (string, error)
-	LoadInfo(key uint64) (*ShortURL, error)
-	Delete(key uint64) error
+	Load(uint64) (string, error)
+	LoadInfo(uint64) (*ShortURL, error)
+	Delete(uint64) error
+	Register(*APIKey) error
+	Retrieve(string) (*APIKey, error)
 }
 
 func Open(conf config.StorageConfig) (_ Storage, err error) {
 	opts := badger.DefaultOptions(conf.DataPath)
 	opts.ReadOnly = conf.ReadOnly
+	opts.Logger = nil
 
 	store := &Store{}
 	if store.db, err = badger.Open(opts); err != nil {
@@ -133,6 +136,7 @@ func (s *Store) LoadInfo(key uint64) (*ShortURL, error) {
 		if errors.Is(err, badger.ErrKeyNotFound) {
 			return nil, ErrNotFound
 		}
+		return nil, err
 	}
 	return obj, nil
 }
@@ -152,4 +156,64 @@ func (s *Store) Delete(key uint64) error {
 		return err
 	}
 	return nil
+}
+
+func (s *Store) Register(obj *APIKey) error {
+	if obj.Created.IsZero() {
+		obj.Created = time.Now()
+	}
+	obj.Modified = time.Now()
+
+	key, err := obj.Key()
+	if err != nil {
+		return err
+	}
+
+	val, err := obj.MarshalValue()
+	if err != nil {
+		return err
+	}
+
+	err = s.db.Update(func(txn *badger.Txn) error {
+		// If the entry already exists, do not overwrite it
+		if _, err := txn.Get(key); !errors.Is(err, badger.ErrKeyNotFound) {
+			if err == nil {
+				return ErrAlreadyExists
+			}
+			return err
+		}
+
+		return txn.Set(key, val)
+	})
+	return err
+}
+
+func (s *Store) Retrieve(clientID string) (*APIKey, error) {
+	obj := &APIKey{ClientID: clientID}
+	key, err := obj.Key()
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.db.View(func(txn *badger.Txn) error {
+		item, err := txn.Get(key)
+		if err != nil {
+			return err
+		}
+
+		return item.Value(func(val []byte) error {
+			if err := obj.UnmarshalValue(val); err != nil {
+				return err
+			}
+			return nil
+		})
+	})
+
+	if err != nil {
+		if errors.Is(err, badger.ErrKeyNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return obj, nil
 }

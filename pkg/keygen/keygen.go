@@ -20,8 +20,8 @@ const (
 
 // Defaults for the length of key IDs and secrets in Quarterdeck.
 const (
-	KeyIDLength  = 32
-	SecretLength = 64
+	KeyIDLength  = 22
+	SecretLength = 48
 )
 
 // Alpha generates a random string of n characters that only includes upper and

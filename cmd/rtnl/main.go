@@ -14,7 +14,10 @@ import (
 	"github.com/rotationalio/rtnl.link/pkg/api/v1"
 	"github.com/rotationalio/rtnl.link/pkg/client"
 	"github.com/rotationalio/rtnl.link/pkg/config"
+	"github.com/rotationalio/rtnl.link/pkg/keygen"
+	"github.com/rotationalio/rtnl.link/pkg/passwd"
 	"github.com/rotationalio/rtnl.link/pkg/rtnl"
+	"github.com/rotationalio/rtnl.link/pkg/storage"
 	"github.com/urfave/cli/v2"
 )
 
@@ -42,6 +45,12 @@ func main() {
 			Value:   "https://rtnl.link",
 			EnvVars: []string{"RTNL_ENDPOINT"},
 		},
+		&cli.StringFlag{
+			Name:    "api-key",
+			Aliases: []string{"a"},
+			Usage:   "the api key to access the shortner service api",
+			EnvVars: []string{"RTNL_API_KEY"},
+		},
 	}
 	app.Commands = []*cli.Command{
 		{
@@ -49,6 +58,14 @@ func main() {
 			Category: "server",
 			Usage:    "run the rtnl server",
 			Action:   serve,
+			Before:   configure,
+			Flags:    []cli.Flag{},
+		},
+		{
+			Name:     "register",
+			Category: "admin",
+			Usage:    "generate apikeys in maintenance mode",
+			Action:   register,
 			Before:   configure,
 			Flags:    []cli.Flag{},
 		},
@@ -119,6 +136,40 @@ func serve(c *cli.Context) (err error) {
 	if err = srv.Serve(); err != nil {
 		return cli.Exit(err, 1)
 	}
+	return nil
+}
+
+//===========================================================================
+// Admin Commands
+//===========================================================================
+
+func register(c *cli.Context) (err error) {
+	if !conf.Maintenance {
+		return cli.Exit("server must be in maintenance mode", 1)
+	}
+
+	// Open the database
+	var store storage.Storage
+	if store, err = storage.Open(conf.Storage); err != nil {
+		return cli.Exit(err, 1)
+	}
+	defer store.Close()
+
+	// Generate API key pair
+	apikey := &storage.APIKey{
+		ClientID: keygen.KeyID(),
+	}
+
+	secret := keygen.Secret()
+	if apikey.DerivedKey, err = passwd.CreateDerivedKey(secret); err != nil {
+		return cli.Exit(err, 1)
+	}
+
+	if err = store.Register(apikey); err != nil {
+		return cli.Exit(err, 1)
+	}
+
+	fmt.Println(apikey.ClientID + "-" + secret)
 	return nil
 }
 
@@ -246,7 +297,7 @@ func configure(c *cli.Context) (err error) {
 }
 
 func makeClient(c *cli.Context) (err error) {
-	if svc, err = client.New(c.String("endpoint")); err != nil {
+	if svc, err = client.New(c.String("endpoint"), c.String("api-key")); err != nil {
 		return cli.Exit(err, 1)
 	}
 	return nil

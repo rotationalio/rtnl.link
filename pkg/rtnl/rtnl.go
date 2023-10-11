@@ -95,8 +95,10 @@ func New(conf config.Config) (s *Server, err error) {
 
 func (s *Server) Serve() (err error) {
 	// Setup database connection
-	if s.db, err = storage.Open(s.conf.Storage); err != nil {
-		return err
+	if !s.conf.Maintenance {
+		if s.db, err = storage.Open(s.conf.Storage); err != nil {
+			return err
+		}
 	}
 
 	// Setup routes and middleware
@@ -150,11 +152,15 @@ func (s *Server) Shutdown(ctx context.Context) (err error) {
 	defer s.SetHealthy(false)
 
 	s.srv.SetKeepAlivesEnabled(false)
-	if err = s.srv.Shutdown(ctx); err != nil {
-		return err
+	if serr := s.srv.Shutdown(ctx); serr != nil {
+		err = errors.Join(err, serr)
 	}
 
-	return nil
+	if serr := s.db.Close(); serr != nil {
+		err = errors.Join(err, serr)
+	}
+
+	return err
 }
 
 func (s *Server) Routes(router *gin.Engine) (err error) {
@@ -202,13 +208,13 @@ func (s *Server) Routes(router *gin.Engine) (err error) {
 	{
 		// Heartbeat route (no authentication required)
 		v1.GET("/status", s.Status)
-		v1.POST("/shorten", s.ShortenURL)
+		v1.POST("/shorten", s.Authenticate, s.ShortenURL)
 	}
 
 	// Permenant Routes
 	router.GET("/:id", s.Redirect)
-	router.DELETE("/:id", s.DeleteShortURL)
-	router.GET("/:id/info", s.ShortURLInfo)
+	router.DELETE("/:id", s.Authenticate, s.DeleteShortURL)
+	router.GET("/:id/info", s.Authenticate, s.ShortURLInfo)
 
 	// NotFound and NotAllowed routes
 	router.NoRoute(s.NotFound)
