@@ -17,6 +17,8 @@ var testEnv = map[string]string{
 	"RTNL_CONSOLE_LOG":       "true",
 	"RTNL_BIND_ADDR":         ":8888",
 	"RTNL_ALLOW_ORIGINS":     "http://localhost:8888",
+	"RTNL_ORIGIN":            "http://localhost:8888",
+	"RTNL_ALT_ORIGIN":        "http://127.0.0.1:8888",
 	"RTNL_STORAGE_READ_ONLY": "true",
 	"RTNL_STORAGE_DATA_PATH": "/data/db",
 }
@@ -37,6 +39,8 @@ func TestConfig(t *testing.T) {
 	require.True(t, conf.ConsoleLog)
 	require.Equal(t, testEnv["RTNL_BIND_ADDR"], conf.BindAddr)
 	require.Equal(t, []string{testEnv["RTNL_ALLOW_ORIGINS"]}, conf.AllowOrigins)
+	require.Equal(t, testEnv["RTNL_ORIGIN"], conf.Origin)
+	require.Equal(t, testEnv["RTNL_ALT_ORIGIN"], conf.AltOrigin)
 	require.True(t, conf.Storage.ReadOnly)
 	require.Equal(t, testEnv["RTNL_STORAGE_DATA_PATH"], conf.Storage.DataPath)
 
