@@ -4,11 +4,11 @@ import "fmt"
 
 // Version component constants for the current build.
 const (
-	VersionMajor         = 0
-	VersionMinor         = 2
+	VersionMajor         = 1
+	VersionMinor         = 0
 	VersionPatch         = 0
 	VersionReleaseLevel  = "beta"
-	VersionReleaseNumber = 2
+	VersionReleaseNumber = 3
 )
 
 // Set the GitVersion via -ldflags="-X 'github.com/rotationalio/rtnl.link/pkg.GitVersion=$(git rev-parse --short HEAD)'"
