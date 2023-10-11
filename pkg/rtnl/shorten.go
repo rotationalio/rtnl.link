@@ -1,6 +1,7 @@
 package rtnl
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -33,7 +34,7 @@ func (s *Server) ShortenURL(c *gin.Context) {
 	// Generate the short URL id from a hash of the input URL
 	if sid, err = short.URL(long.URL); err != nil {
 		c.Error(err)
-		c.JSON(http.StatusInternalServerError, "unable to complete request")
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse("unable to complete request"))
 		return
 	}
 
@@ -44,7 +45,7 @@ func (s *Server) ShortenURL(c *gin.Context) {
 
 	if err = s.db.Save(model); err != nil {
 		log.Error().Err(err).Msg("could not store shortened url")
-		c.JSON(http.StatusInternalServerError, "unable to complete request")
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse("unable to complete request"))
 		return
 	}
 
@@ -72,9 +73,13 @@ func (s *Server) ShortURLInfo(c *gin.Context) {
 	// Lookup URL info from the database
 	var model *storage.ShortURL
 	if model, err = s.db.LoadInfo(sid); err != nil {
-		// TODO: handle not found error
+		if errors.Is(err, storage.ErrNotFound) {
+			c.JSON(http.StatusNotFound, api.ErrorResponse("short url not found"))
+			return
+		}
+
 		log.Warn().Err(err).Uint64("id", sid).Msg("could not load url from database")
-		c.JSON(http.StatusInternalServerError, "unable to complete request")
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse("unable to complete request"))
 		return
 	}
 
@@ -104,8 +109,13 @@ func (s *Server) DeleteShortURL(c *gin.Context) {
 
 	// Delete URL info from the database
 	if err = s.db.Delete(sid); err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			c.JSON(http.StatusNotFound, api.ErrorResponse("short url not found"))
+			return
+		}
+
 		log.Warn().Err(err).Uint64("id", sid).Msg("could not delete url from database")
-		c.JSON(http.StatusInternalServerError, "unable to complete request")
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse("unable to complete request"))
 		return
 	}
 

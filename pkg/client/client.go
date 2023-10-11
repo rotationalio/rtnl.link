@@ -187,13 +187,14 @@ func (s *APIv1) Do(req *http.Request, data interface{}, checkStatus bool) (rep *
 			// Attempt to read the error response from JSON, if available
 			serr := &StatusError{
 				StatusCode: rep.StatusCode,
+				Reply:      api.Reply{},
 			}
 
 			if err = json.NewDecoder(rep.Body).Decode(&serr.Reply); err == nil {
 				return rep, serr
 			}
 
-			serr.Reply = api.ErrUnsuccessfulReply
+			serr.Reply = api.Reply{Error: "something went wrong"}
 			return rep, serr
 		}
 	}

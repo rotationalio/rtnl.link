@@ -26,9 +26,8 @@ type Service interface {
 
 // Reply contains standard fields that are used for generic API responses and errors.
 type Reply struct {
-	Success    bool   `json:"success"`
-	Error      string `json:"error,omitempty"`
-	Unverified bool   `json:"unverified,omitempty"`
+	Success bool   `json:"success"`
+	Error   string `json:"error,omitempty"`
 }
 
 // Returned on status requests.

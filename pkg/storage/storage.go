@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"errors"
 	"io"
 	"time"
 
@@ -56,6 +57,7 @@ func (s *Store) Save(obj *ShortURL) error {
 	}
 
 	err = s.db.Update(func(txn *badger.Txn) error {
+		// TODO: check if object already exists before overwrite
 		return txn.SetEntry(entry)
 	})
 	return err
@@ -94,7 +96,9 @@ func (s *Store) Load(key uint64) (string, error) {
 	})
 
 	if err != nil {
-		// TODO: determine not found
+		if errors.Is(err, badger.ErrKeyNotFound) {
+			return "", ErrNotFound
+		}
 		return "", err
 	}
 	return obj.URL, nil
@@ -119,8 +123,9 @@ func (s *Store) LoadInfo(key uint64) (*ShortURL, error) {
 	})
 
 	if err != nil {
-		// TODO: determine not found
-		return nil, err
+		if errors.Is(err, badger.ErrKeyNotFound) {
+			return nil, ErrNotFound
+		}
 	}
 	return obj, nil
 }
@@ -129,7 +134,15 @@ func (s *Store) Delete(key uint64) error {
 	obj := &ShortURL{ID: key}
 	keyb := obj.Key()
 
-	return s.db.Update(func(txn *badger.Txn) error {
+	err := s.db.Update(func(txn *badger.Txn) error {
 		return txn.Delete(keyb)
 	})
+
+	if err != nil {
+		if errors.Is(err, badger.ErrKeyNotFound) {
+			return ErrNotFound
+		}
+		return err
+	}
+	return nil
 }
