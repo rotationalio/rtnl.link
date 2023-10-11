@@ -17,6 +17,10 @@ var (
 	ErrMissingURL         = errors.New("a url is required for shortening")
 	ErrCannotParseExpires = errors.New("expires must be a timestamp in the form of YYYY-MM-DD or YYYY-MM-DD HH:MM:SS")
 	ErrInvalidExpires     = errors.New("expiration must be valid timestamp in the future")
+	ErrParseBearer        = errors.New("could not parse Bearer token from Authorization header")
+	ErrNoAuthorization    = errors.New("no authorization header in request")
+	ErrInvalidToken       = errors.New("invalid bearer token in Authorization header")
+	ErrUnauthenticated    = errors.New("this endpoint requires authentication")
 )
 
 // Construct a new response for an error or simply return unsuccessful.
