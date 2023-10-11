@@ -44,6 +44,11 @@ func (s *Server) ShortenURL(c *gin.Context) {
 	model.Expires, _ = long.ExpiresAt()
 
 	if err = s.db.Save(model); err != nil {
+		if errors.Is(err, storage.ErrAlreadyExists) {
+			c.JSON(http.StatusConflict, api.ErrorResponse("shortened url already exists"))
+			return
+		}
+
 		log.Error().Err(err).Msg("could not store shortened url")
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse("unable to complete request"))
 		return
@@ -83,7 +88,6 @@ func (s *Server) ShortURLInfo(c *gin.Context) {
 		return
 	}
 
-	// TODO: perform expiration check
 	surl := base62.Encode(sid)
 	out := &api.ShortURL{
 		URL:     "https://rtnl.link/" + surl,
