@@ -57,7 +57,14 @@ func (s *Store) Save(obj *ShortURL) error {
 	}
 
 	err = s.db.Update(func(txn *badger.Txn) error {
-		// TODO: check if object already exists before overwrite
+		// If the entry already exists, do not overwrite it
+		if _, err := txn.Get(key); !errors.Is(err, badger.ErrKeyNotFound) {
+			if err == nil {
+				return ErrAlreadyExists
+			}
+			return err
+		}
+
 		return txn.SetEntry(entry)
 	})
 	return err
