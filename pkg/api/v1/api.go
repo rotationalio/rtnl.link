@@ -10,7 +10,7 @@ import (
 // Service Interface
 //===========================================================================
 
-type QuarterdeckClient interface {
+type Service interface {
 	// Unauthenticated endpoints
 	Status(context.Context) (*StatusReply, error)
 
