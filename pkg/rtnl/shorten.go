@@ -54,11 +54,12 @@ func (s *Server) ShortenURL(c *gin.Context) {
 		return
 	}
 
-	// TODO: do not hardcode URIs, but fetch from config
-	out := &api.ShortURL{
-		URL:    "https://rtnl.link/" + sid,
-		AltURL: "https://r8l.co/" + sid,
+	out := &api.ShortURL{}
+	out.URL, out.AltURL = s.conf.MakeOriginURLs(sid)
+	if !model.Expires.IsZero() {
+		out.Expires = &model.Expires
 	}
+
 	c.JSON(http.StatusCreated, out)
 }
 
@@ -88,12 +89,10 @@ func (s *Server) ShortURLInfo(c *gin.Context) {
 		return
 	}
 
-	surl := base62.Encode(sid)
-	out := &api.ShortURL{
-		URL:     "https://rtnl.link/" + surl,
-		AltURL:  "https://r8l.co/" + surl,
-		Visits:  model.Visits,
-		Expires: model.Expires,
+	out := &api.ShortURL{Visits: model.Visits}
+	out.URL, out.AltURL = s.conf.MakeOriginURLs(base62.Encode(sid))
+	if !model.Expires.IsZero() {
+		out.Expires = &model.Expires
 	}
 	c.JSON(http.StatusOK, out)
 }

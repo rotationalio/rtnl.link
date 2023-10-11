@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rotationalio/confire"
@@ -25,8 +26,12 @@ type Config struct {
 	ConsoleLog   bool                `split_words:"true" default:"false" yaml:"console_log"`
 	BindAddr     string              `split_words:"true" default:":8765" yaml:"bind_addr"`
 	AllowOrigins []string            `split_words:"true" default:"http://localhost:8765"`
+	Origin       string              `default:"https://rtnl.link"`
+	AltOrigin    string              `split_words:"true" default:"https://r8l.co"`
 	Storage      StorageConfig
 	processed    bool
+	originURL    *url.URL
+	altURL       *url.URL
 }
 
 type StorageConfig struct {
@@ -76,4 +81,20 @@ func (c Config) Validate() (err error) {
 		return fmt.Errorf("invalid configuration: %q is not a valid gin mode", c.Mode)
 	}
 	return nil
+}
+
+func (c *Config) MakeOriginURLs(sid string) (link string, alt string) {
+	if c.originURL == nil {
+		c.originURL, _ = url.Parse(c.Origin)
+	}
+
+	if c.altURL == nil && c.AltOrigin != "" {
+		c.altURL, _ = url.Parse(c.AltOrigin)
+	}
+
+	link = c.originURL.ResolveReference(&url.URL{Path: sid}).String()
+	if c.altURL != nil {
+		alt = c.altURL.ResolveReference(&url.URL{Path: sid}).String()
+	}
+	return link, alt
 }

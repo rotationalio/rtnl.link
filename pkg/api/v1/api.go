@@ -53,10 +53,10 @@ type LongURL struct {
 }
 
 type ShortURL struct {
-	URL     string    `json:"url"`
-	AltURL  string    `json:"alt_url,omitempty"`
-	Visits  uint64    `json:"visits,omitempty"`
-	Expires time.Time `json:"expires,omitempty"`
+	URL     string     `json:"url"`
+	AltURL  string     `json:"alt_url,omitempty"`
+	Visits  uint64     `json:"visits,omitempty"`
+	Expires *time.Time `json:"expires,omitempty"`
 }
 
 //===========================================================================
