@@ -25,7 +25,13 @@ type Config struct {
 	ConsoleLog   bool                `split_words:"true" default:"false" yaml:"console_log"`
 	BindAddr     string              `split_words:"true" default:":8765" yaml:"bind_addr"`
 	AllowOrigins []string            `split_words:"true" default:"http://localhost:8765"`
+	Storage      StorageConfig
 	processed    bool
+}
+
+type StorageConfig struct {
+	ReadOnly bool   `split_words:"true" default:"false"`
+	DataPath string `split_words:"true" required:"true"`
 }
 
 // New creates and processes a Config from the environment ready for use. If the

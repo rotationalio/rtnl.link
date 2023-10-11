@@ -17,6 +17,7 @@ import (
 	"github.com/rotationalio/rtnl.link/pkg"
 	"github.com/rotationalio/rtnl.link/pkg/config"
 	"github.com/rotationalio/rtnl.link/pkg/logger"
+	"github.com/rotationalio/rtnl.link/pkg/storage"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -37,14 +38,15 @@ func init() {
 // Implements the link shortening service and API.
 type Server struct {
 	sync.RWMutex
-	conf    config.Config // Primary source of truth for server configuration
-	srv     *http.Server  // The HTTP server configuration for handling requests
-	router  *gin.Engine   // The gin router for mapping endpoints to handlers
-	healthy bool          // Indicates that the service is online and healthy
-	ready   bool          // Indicates that the service is ready to accept requests
-	started time.Time     // The timestamp that the server was started (for uptime)
-	url     *url.URL      // The endpoint that the server is hosted on
-	echan   chan error    // Sending errors down this channel stops the server (is fatal)
+	conf    config.Config   // Primary source of truth for server configuration
+	srv     *http.Server    // The HTTP server configuration for handling requests
+	router  *gin.Engine     // The gin router for mapping endpoints to handlers
+	db      storage.Storage // Database storage for URLs and API keys
+	healthy bool            // Indicates that the service is online and healthy
+	ready   bool            // Indicates that the service is ready to accept requests
+	started time.Time       // The timestamp that the server was started (for uptime)
+	url     *url.URL        // The endpoint that the server is hosted on
+	echan   chan error      // Sending errors down this channel stops the server (is fatal)
 }
 
 func New(conf config.Config) (s *Server, err error) {
@@ -92,6 +94,11 @@ func New(conf config.Config) (s *Server, err error) {
 }
 
 func (s *Server) Serve() (err error) {
+	// Setup database connection
+	if s.db, err = storage.Open(s.conf.Storage); err != nil {
+		return err
+	}
+
 	// Setup routes and middleware
 	if err = s.Routes(s.router); err != nil {
 		return err

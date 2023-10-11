@@ -7,6 +7,7 @@ import (
 	"github.com/rotationalio/rtnl.link/pkg/api/v1"
 	"github.com/rotationalio/rtnl.link/pkg/base62"
 	"github.com/rotationalio/rtnl.link/pkg/short"
+	"github.com/rotationalio/rtnl.link/pkg/storage"
 	"github.com/rs/zerolog/log"
 )
 
@@ -36,14 +37,22 @@ func (s *Server) ShortenURL(c *gin.Context) {
 		return
 	}
 
-	// TODO: save URL to the database
+	// Save URL to the database
+	model := &storage.ShortURL{URL: long.URL}
+	model.ID, _ = base62.Decode(sid)
+	model.Expires, _ = long.ExpiresAt()
+
+	if err = s.db.Save(model); err != nil {
+		log.Error().Err(err).Msg("could not store shortened url")
+		c.JSON(http.StatusInternalServerError, "unable to complete request")
+		return
+	}
+
 	// TODO: do not hardcode URIs, but fetch from config
 	out := &api.ShortURL{
 		URL:    "https://rtnl.link/" + sid,
 		AltURL: "https://r8l.co/" + sid,
 	}
-
-	out.Expires, _ = long.ExpiresAt()
 	c.JSON(http.StatusCreated, out)
 }
 
@@ -60,12 +69,22 @@ func (s *Server) ShortURLInfo(c *gin.Context) {
 		return
 	}
 
-	// TODO: lookup URL info from the database
+	// Lookup URL info from the database
+	var model *storage.ShortURL
+	if model, err = s.db.LoadInfo(sid); err != nil {
+		// TODO: handle not found error
+		log.Warn().Err(err).Uint64("id", sid).Msg("could not load url from database")
+		c.JSON(http.StatusInternalServerError, "unable to complete request")
+		return
+	}
+
 	// TODO: perform expiration check
 	surl := base62.Encode(sid)
 	out := &api.ShortURL{
-		URL:    "https://rtnl.link/" + surl,
-		AltURL: "https://r8l.co/" + surl,
+		URL:     "https://rtnl.link/" + surl,
+		AltURL:  "https://r8l.co/" + surl,
+		Visits:  model.Visits,
+		Expires: model.Expires,
 	}
 	c.JSON(http.StatusOK, out)
 }
@@ -83,7 +102,13 @@ func (s *Server) DeleteShortURL(c *gin.Context) {
 		return
 	}
 
-	// TODO: delete URL info from the database
+	// Delete URL info from the database
+	if err = s.db.Delete(sid); err != nil {
+		log.Warn().Err(err).Uint64("id", sid).Msg("could not delete url from database")
+		c.JSON(http.StatusInternalServerError, "unable to complete request")
+		return
+	}
+
 	log.Info().Uint64("id", sid).Msg("short url deleted")
 	c.JSON(http.StatusOK, &api.Reply{Success: true})
 }

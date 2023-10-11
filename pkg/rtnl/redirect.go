@@ -13,6 +13,7 @@ func (s *Server) Redirect(c *gin.Context) {
 	var (
 		err error
 		sid uint64
+		url string
 	)
 
 	// Get URL parameter from input
@@ -22,9 +23,13 @@ func (s *Server) Redirect(c *gin.Context) {
 		return
 	}
 
-	// TODO: fetch long url from the database
-	// TODO: increment visits in the database
-	// TODO: check expiration for the URL
-	log.Info().Uint64("id", sid).Msg("redirecting user")
-	c.Redirect(http.StatusMovedPermanently, "https://rotational.io")
+	if url, err = s.db.Load(sid); err != nil {
+		// TODO: handle not found errors gracefully
+		log.Warn().Err(err).Uint64("id", sid).Msg("could not retrieve short url from database")
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse("could not process request"))
+		return
+	}
+
+	log.Info().Uint64("id", sid).Str("url", url).Msg("redirecting user")
+	c.Redirect(http.StatusFound, url)
 }
