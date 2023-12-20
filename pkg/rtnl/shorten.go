@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rotationalio/rtnl.link/pkg"
 	"github.com/rotationalio/rtnl.link/pkg/api/v1"
 	"github.com/rotationalio/rtnl.link/pkg/base62"
 	"github.com/rotationalio/rtnl.link/pkg/short"
@@ -20,7 +21,7 @@ func (s *Server) ShortenURL(c *gin.Context) {
 		long *api.LongURL
 	)
 
-	if err = c.BindJSON(&long); err != nil {
+	if err = c.Bind(&long); err != nil {
 		log.Warn().Err(err).Msg("could not parse shorten url request")
 		c.JSON(http.StatusBadRequest, api.ErrUnparsable)
 		return
@@ -61,7 +62,12 @@ func (s *Server) ShortenURL(c *gin.Context) {
 		out.Expires = &model.Expires
 	}
 
-	c.JSON(http.StatusCreated, out)
+	c.Negotiate(http.StatusCreated, gin.Negotiate{
+		Offered:  []string{gin.MIMEHTML, gin.MIMEJSON},
+		HTMLName: "created.html",
+		HTMLData: out,
+		JSONData: out,
+	})
 }
 
 func (s *Server) ShortURLInfo(c *gin.Context) {
@@ -90,12 +96,33 @@ func (s *Server) ShortURLInfo(c *gin.Context) {
 		return
 	}
 
-	out := &api.ShortURL{Visits: model.Visits}
+	out := &api.ShortURL{
+		Title:       model.Title,
+		Description: model.Description,
+		Visits:      model.Visits,
+		CampaignID:  model.CampaignID,
+		Campaigns:   model.Campaigns,
+	}
 	out.URL, out.AltURL = s.conf.MakeOriginURLs(base62.Encode(sid))
+
 	if !model.Expires.IsZero() {
 		out.Expires = &model.Expires
 	}
-	c.JSON(http.StatusOK, out)
+
+	if !model.Created.IsZero() {
+		out.Created = &model.Created
+	}
+
+	if !model.Modified.IsZero() {
+		out.Modified = &model.Modified
+	}
+
+	c.Negotiate(http.StatusOK, gin.Negotiate{
+		Offered:  []string{gin.MIMEHTML, gin.MIMEJSON},
+		HTMLName: "info.html",
+		HTMLData: &InfoDetail{WebData: WebData{Version: pkg.Version()}, Info: out},
+		JSONData: out,
+	})
 }
 
 func (s *Server) DeleteShortURL(c *gin.Context) {

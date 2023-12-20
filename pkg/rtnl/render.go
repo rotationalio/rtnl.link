@@ -26,16 +26,8 @@ func NewRender(fsys fs.FS, pattern string, includes ...string) (render *Render, 
 
 	// HACK: parses each top-level *.html file individually and includes the paterns
 	// specified by the includes var with every single template.
-	var names []string
-	if names, err = fs.Glob(fsys, pattern); err != nil {
+	if err = render.AddPattern(fsys, pattern, includes...); err != nil {
 		return nil, err
-	}
-
-	for _, name := range names {
-		patterns := append([]string{name}, includes...)
-		if render.templates[filepath.Base(name)], err = template.ParseFS(fsys, patterns...); err != nil {
-			return nil, err
-		}
 	}
 
 	return render, nil
@@ -49,4 +41,19 @@ func (r *Render) Instance(name string, data any) render.Render {
 		Name:     name,
 		Data:     data,
 	}
+}
+
+func (r *Render) AddPattern(fsys fs.FS, pattern string, includes ...string) (err error) {
+	var names []string
+	if names, err = fs.Glob(fsys, pattern); err != nil {
+		return err
+	}
+
+	for _, name := range names {
+		patterns := append([]string{name}, includes...)
+		if r.templates[filepath.Base(name)], err = template.ParseFS(fsys, patterns...); err != nil {
+			return err
+		}
+	}
+	return nil
 }
