@@ -24,3 +24,4 @@ go.work
 .secret
 fixtures
 node_modules
+tmp
