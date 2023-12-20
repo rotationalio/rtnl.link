@@ -1,0 +1,15 @@
+{
+  "name": "rtnl.link",
+  "version": "1.0.0",
+  "description": "Custom URL shortening service for rtln.link and r8l.co. A simple microservice for custom URL shortening and click tracking for Rotational Labs.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx tailwindcss -i pkg/rtnl/static/styles/style.css -o pkg/rtnl/static/styles/output.css --watch"
+  },
+  "author": "Rotational Labs, Inc.",
+  "license": "BSD-3-Clause",
+  "dependencies": {
+    "tailwindcss": "^3.4.0"
+  }
+}
