@@ -1,4 +1,16 @@
 {{ template "base" . }}
 {{ define "content" }}
-  <h1>Hello World!</h1>
+
+<section class="text-center py-14">
+  <h2 class="text-2xl font-bold">Get Your Rotational URL</h2>
+  <form method="post" hx-post="/shorten">
+    <label for="original_url" class="hidden">Enter your original URL here</label>
+    <input type="text" name="original_url" name="original_url" placeholder="Enter original URL here" required class="mt-4 p-2 mx-auto block bg-gray-50 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
+    <div>
+      <button type="submit" class="bg-[#1D65A6FF] hover:bg-[#192E5B] text-white p-2 rounded mt-4">Shorten URL</button>
+    </div>
+  </form>
+  
+</section>
+
 {{ end }}
