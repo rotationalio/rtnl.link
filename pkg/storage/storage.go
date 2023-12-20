@@ -5,6 +5,7 @@ import (
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/rotationalio/rtnl.link/pkg/config"
+	"github.com/rotationalio/rtnl.link/pkg/storage/migrations"
 	"github.com/rotationalio/rtnl.link/pkg/storage/models"
 )
 
@@ -35,6 +36,12 @@ func Open(conf config.StorageConfig) (_ Storage, err error) {
 	if store.db, err = badger.Open(opts); err != nil {
 		return nil, err
 	}
+
+	// Run the migrations to ensure the database is up to date.
+	if err = store.db.Update(migrations.Migrate); err != nil {
+		return nil, err
+	}
+
 	return store, nil
 }
 

@@ -9,6 +9,7 @@ import (
 
 func init() {
 	// NOTE: Register migrations here in the order that they should be applied!
+	register(Migration0001)
 }
 
 var (
@@ -16,16 +17,18 @@ var (
 	migrations   = Migrations{}
 )
 
-func Register(migrate MigrateFn) {
-	migration := &Migration{Migrate: migrate}
-	if len(migrations) > 0 {
-		migration.Previous = migrations[len(migrations)-1]
-		migration.Version = migration.Previous.Version + 1
-	} else {
-		migration.Version = 1
-		migration.Previous = nil
+func register(migrateFunctions ...MigrateFn) {
+	for _, migrate := range migrateFunctions {
+		migration := &Migration{Migrate: migrate}
+		if len(migrations) > 0 {
+			migration.Previous = migrations[len(migrations)-1]
+			migration.Version = migration.Previous.Version + 1
+		} else {
+			migration.Version = 1
+			migration.Previous = nil
+		}
+		migrations = append(migrations, migration)
 	}
-	migrations = append(migrations, migration)
 }
 
 // Migration represents any changes that must be applied to the database using the

@@ -11,22 +11,23 @@ import (
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/rotationalio/rtnl.link/pkg/storage/migrations"
+	"github.com/rotationalio/rtnl.link/pkg/storage/models"
 	"github.com/stretchr/testify/require"
 )
 
 // NOTE: must update this value when new migrations are added!
-const latestMigration = uint16(0)
+const latestMigration = uint16(1)
 
 func TestMigrate(t *testing.T) {
 	t.Run("MIG0000", func(t *testing.T) {
 		db := makeFixtureDB(t, "testdata/mig0.tgz")
 
 		// Check the fixture
-		records, err := counts(db)
+		records, err := countsByKeyLength(db)
 		require.NoError(t, err, "could not count contents of database")
 		require.Len(t, records, 2, "unexpected number of objects, have the fixtures changed?")
-		require.Equal(t, 6, records["links"], "unexpected number of links, have the fixtures changed?")
-		require.Equal(t, 1, records["apikeys"], "unexpected number of apikeys, have the fixtures changed?")
+		require.Equal(t, 6, records["🔗"], "unexpected number of links, have the fixtures changed?")
+		require.Equal(t, 1, records["🔑"], "unexpected number of apikeys, have the fixtures changed?")
 
 		// Apply the migrtions
 		err = db.Update(migrations.Migrate)
@@ -35,11 +36,36 @@ func TestMigrate(t *testing.T) {
 		// Check that we're at the latest registered migration
 		err = checkLatest(db)
 		require.NoError(t, err, "not at latest registered migration")
+
+		// Check that everything in the database is now prefixed
+		newRecords, err := counts(db)
+		delete(newRecords, "meta")
+
+		require.NoError(t, err, "could not count contents of database")
+		require.Equal(t, records, newRecords, "counts do not match original counts")
 	})
 }
 
-// Counts returns the counts in the database by key length
 func counts(db *badger.DB) (map[string]int, error) {
+	counter := make(map[string]int)
+	err := db.View(func(txn *badger.Txn) error {
+		iter := txn.NewIterator(badger.DefaultIteratorOptions)
+		defer iter.Close()
+
+		for iter.Rewind(); iter.Valid(); iter.Next() {
+			item := iter.Item()
+			key := item.Key()
+			bucket := models.Bucket(key[0:4])
+			counter[bucket.String()]++
+		}
+		return nil
+	})
+
+	return counter, err
+}
+
+// Counts returns the number of items in the database by key length
+func countsByKeyLength(db *badger.DB) (map[string]int, error) {
 	counter := make(map[string]int)
 	err := db.View(func(txn *badger.Txn) error {
 		iter := txn.NewIterator(badger.DefaultIteratorOptions)
@@ -51,9 +77,9 @@ func counts(db *badger.DB) (map[string]int, error) {
 
 			switch len(key) {
 			case 16:
-				counter["apikeys"]++
+				counter["🔑"]++
 			case 8:
-				counter["links"]++
+				counter["🔗"]++
 			default:
 				counter["unknown"]++
 			}
