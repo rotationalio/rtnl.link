@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"html/template"
 	"io/fs"
 	"net"
 	"net/http"
@@ -173,11 +172,10 @@ func (s *Server) Routes(router *gin.Engine) (err error) {
 	router.GET("/readyz", s.Readyz)
 
 	// Setup HTML template renderer
-	var html *template.Template
-	if html, err = template.ParseFS(content, "templates/*.html"); err != nil {
+	includes := []string{"templates/layout/*.html", "templates/partials/*.html"}
+	if s.router.HTMLRender, err = NewRender(content, "templates/*.html", includes...); err != nil {
 		return err
 	}
-	router.SetHTMLTemplate(html)
 
 	// Setup CORS configuration
 	corsConf := cors.Config{
