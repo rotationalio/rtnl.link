@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"html/template"
+	"io/fs"
 	"net"
 	"net/http"
 	"net/url"
@@ -170,6 +172,13 @@ func (s *Server) Routes(router *gin.Engine) (err error) {
 	router.GET("/livez", s.Healthz)
 	router.GET("/readyz", s.Readyz)
 
+	// Setup HTML template renderer
+	var html *template.Template
+	if html, err = template.ParseFS(content, "templates/*.html"); err != nil {
+		return err
+	}
+	router.SetHTMLTemplate(html)
+
 	// Setup CORS configuration
 	corsConf := cors.Config{
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"},
@@ -203,6 +212,13 @@ func (s *Server) Routes(router *gin.Engine) (err error) {
 		}
 	}
 
+	// Setup Static Content Server
+	var static fs.FS
+	if static, err = fs.Sub(content, "static"); err != nil {
+		return err
+	}
+	router.StaticFS("/static", http.FS(static))
+
 	// Add the v1 API routes
 	v1 := router.Group("/v1")
 	{
@@ -215,6 +231,10 @@ func (s *Server) Routes(router *gin.Engine) (err error) {
 	router.GET("/:id", s.Redirect)
 	router.DELETE("/:id", s.Authenticate, s.DeleteShortURL)
 	router.GET("/:id/info", s.Authenticate, s.ShortURLInfo)
+
+	// Web Routes
+	// TODO: add authentication
+	router.GET("/", s.Index)
 
 	// NotFound and NotAllowed routes
 	router.NoRoute(s.NotFound)
