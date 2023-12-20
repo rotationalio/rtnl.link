@@ -2,6 +2,7 @@ package models_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/rotationalio/rtnl.link/pkg/keygen"
 	"github.com/rotationalio/rtnl.link/pkg/storage/models"
@@ -13,7 +14,16 @@ func TestAssertAPIKeyLength(t *testing.T) {
 		ClientID: keygen.KeyID(),
 	}
 
-	key, err := model.Key()
-	require.NoError(t, err, "could not create key")
-	require.Len(t, key, 16, "expected key to be 16 bytes")
+	key := model.Key()
+	require.Len(t, key, 20, "expected key to be 4+16 bytes")
+}
+
+func TestAPIKeys(t *testing.T) {
+	testCases := []models.Model{
+		&models.APIKey{ClientID: keygen.KeyID(), DerivedKey: keygen.Secret()},
+		&models.APIKey{ClientID: keygen.KeyID(), DerivedKey: keygen.Secret(), Created: time.Now().Truncate(time.Millisecond), Modified: time.Now().Truncate(time.Millisecond)},
+	}
+
+	test := makeModelsTest(models.APIKeysBucket, testCases)
+	test(t)
 }

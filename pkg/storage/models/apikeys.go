@@ -14,8 +14,14 @@ type APIKey struct {
 	Modified   time.Time `msgpack:"modified"`
 }
 
-func (m *APIKey) Key() ([]byte, error) {
-	return base64.RawStdEncoding.DecodeString(m.ClientID)
+var _ Model = &APIKey{}
+
+func (m *APIKey) Key() []byte {
+	data, _ := base64.RawStdEncoding.DecodeString(m.ClientID)
+	key := make([]byte, len(data)+4)
+	copy(key[0:4], APIKeysBucket[:])
+	copy(key[4:], data)
+	return key
 }
 
 func (m *APIKey) MarshalValue() ([]byte, error) {

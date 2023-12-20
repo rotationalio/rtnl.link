@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
+	"github.com/rs/zerolog/log"
 )
 
 // Migrate the database to the current version or ensure that the database is current.
@@ -16,8 +17,16 @@ func Migrate(txn *badger.Txn) (err error) {
 
 	// Load the current migration from the database
 	var current *Migration
-	if current, err = currentMigration(txn); err != nil {
+	if current, err = Current(txn); err != nil {
 		return err
+	}
+
+	// Track migration progress
+	var applied int
+	var initialVersion uint16
+
+	if current != nil {
+		initialVersion = current.Version
 	}
 
 	// Keep applying migrations while the current migration has next
@@ -26,19 +35,33 @@ func Migrate(txn *badger.Txn) (err error) {
 		if err := next.Migrate(txn); err != nil {
 			return err
 		}
+
 		next.Applied = time.Now()
 		next.Previous = current
 		current = next
+		applied++
 	}
 
 	// Save the current migration to the database
 	if err = saveMigration(txn, current); err != nil {
 		return err
 	}
+
+	// Log the results of the migration
+	if applied > 0 {
+		log.Info().
+			Uint16("initial_version", initialVersion).
+			Uint16("current_version", current.Version).
+			Int("applied", applied).
+			Msg("database migration applied")
+	} else {
+		log.Debug().Uint16("version", initialVersion).Msg("database at latest migration")
+	}
+
 	return nil
 }
 
-func currentMigration(txn *badger.Txn) (_ *Migration, err error) {
+func Current(txn *badger.Txn) (_ *Migration, err error) {
 	var item *badger.Item
 	if item, err = txn.Get(migrationKey); err != nil {
 		if errors.Is(err, badger.ErrKeyNotFound) {

@@ -14,6 +14,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// NOTE: must update this value when new migrations are added!
+const latestMigration = uint16(0)
+
 func TestMigrate(t *testing.T) {
 	t.Run("MIG0000", func(t *testing.T) {
 		db := makeFixtureDB(t, "testdata/mig0.tgz")
@@ -25,8 +28,13 @@ func TestMigrate(t *testing.T) {
 		require.Equal(t, 6, records["links"], "unexpected number of links, have the fixtures changed?")
 		require.Equal(t, 1, records["apikeys"], "unexpected number of apikeys, have the fixtures changed?")
 
+		// Apply the migrtions
 		err = db.Update(migrations.Migrate)
 		require.NoError(t, err)
+
+		// Check that we're at the latest registered migration
+		err = checkLatest(db)
+		require.NoError(t, err, "not at latest registered migration")
 	})
 }
 
@@ -54,6 +62,30 @@ func counts(db *badger.DB) (map[string]int, error) {
 	})
 
 	return counter, err
+}
+
+func checkLatest(db *badger.DB) error {
+	var current *migrations.Migration
+	err := db.View(func(txn *badger.Txn) (err error) {
+		if current, err = migrations.Current(txn); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	var version uint16
+	if current != nil {
+		version = current.Version
+	}
+
+	if version != latestMigration {
+		return fmt.Errorf("current migration version %d does not match latest version %d; does latestMigration in tests need to be updated?", version, latestMigration)
+	}
+	return nil
 }
 
 // Create a badger database using the fixtures at a temporary directory.

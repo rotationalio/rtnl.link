@@ -19,9 +19,12 @@ type ShortURL struct {
 	CreatedBy   string    `msgpack:"created_by"`
 }
 
+var _ Model = &ShortURL{}
+
 func (m *ShortURL) Key() []byte {
-	key := make([]byte, 8)
-	binary.LittleEndian.PutUint64(key, m.ID)
+	key := make([]byte, 12)
+	copy(key[0:4], LinksBucket[:])
+	binary.LittleEndian.PutUint64(key[4:], m.ID)
 	return key
 }
 

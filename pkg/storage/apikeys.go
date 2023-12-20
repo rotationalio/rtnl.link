@@ -14,11 +14,7 @@ func (s *Store) Register(obj *models.APIKey) error {
 	}
 	obj.Modified = time.Now()
 
-	key, err := obj.Key()
-	if err != nil {
-		return err
-	}
-
+	key := obj.Key()
 	val, err := obj.MarshalValue()
 	if err != nil {
 		return err
@@ -40,12 +36,9 @@ func (s *Store) Register(obj *models.APIKey) error {
 
 func (s *Store) Retrieve(clientID string) (*models.APIKey, error) {
 	obj := &models.APIKey{ClientID: clientID}
-	key, err := obj.Key()
-	if err != nil {
-		return nil, err
-	}
+	key := obj.Key()
 
-	err = s.db.View(func(txn *badger.Txn) error {
+	err := s.db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get(key)
 		if err != nil {
 			return err

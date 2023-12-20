@@ -12,7 +12,7 @@ func init() {
 }
 
 var (
-	migrationKey = []byte{0x00, 0x00, 0x00, 0x00}
+	migrationKey = []byte{0, 0, 0, 109, 105, 103, 114, 97, 116, 105, 111, 110}
 	migrations   = Migrations{}
 )
 
