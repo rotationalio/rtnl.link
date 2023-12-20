@@ -15,6 +15,7 @@ type Service interface {
 	Status(context.Context) (*StatusReply, error)
 
 	// URL Management
+	ShortURLList(context.Context, *PageQuery) (*ShortURLList, error)
 	ShortenURL(context.Context, *LongURL) (*ShortURL, error)
 	ShortURLInfo(context.Context, string) (*ShortURL, error)
 	DeleteShortURL(context.Context, string) error
@@ -40,6 +41,7 @@ type StatusReply struct {
 // PageQuery manages paginated list requests.
 type PageQuery struct {
 	PageSize      int    `json:"page_size" url:"page_size,omitempty" form:"page_size"`
+	PrevPageToken string `json:"prev_page_token" url:"prev_page_token,omitempty" form:"prev_page_token"`
 	NextPageToken string `json:"next_page_token" url:"next_page_token,omitempty" form:"next_page_token"`
 }
 
@@ -56,9 +58,9 @@ type LongURL struct {
 type ShortURL struct {
 	URL         string     `json:"url"`
 	AltURL      string     `json:"alt_url,omitempty"`
-	Title       string     `json:"title,omitempty"`
-	Description string     `json:"description,omitempty"`
-	Visits      uint64     `json:"visits,omitempty"`
+	Title       string     `json:"title"`
+	Description string     `json:"description"`
+	Visits      uint64     `json:"visits"`
 	Expires     *time.Time `json:"expires,omitempty"`
 	Created     *time.Time `json:"created,omitempty"`
 	Modified    *time.Time `json:"modified,omitempty"`
@@ -66,9 +68,21 @@ type ShortURL struct {
 	Campaigns   []uint64   `json:"campaigns,omitempty"`
 }
 
+type ShortURLList struct {
+	URLs []*ShortURL `json:"urls"`
+	Page *PageQuery  `json:"page"`
+}
+
 //===========================================================================
 // API Input Validation
 //===========================================================================
+
+func (p *PageQuery) Validate() error {
+	if p.PrevPageToken != "" && p.NextPageToken != "" {
+		return ErrForwardsBackwards
+	}
+	return nil
+}
 
 func (u *LongURL) Validate() error {
 	u.URL = strings.TrimSpace(u.URL)
