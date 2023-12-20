@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dgraph-io/badger/v4"
 	"github.com/joho/godotenv"
 	"github.com/rotationalio/rtnl.link/pkg"
 	"github.com/rotationalio/rtnl.link/pkg/api/v1"
@@ -18,6 +19,7 @@ import (
 	"github.com/rotationalio/rtnl.link/pkg/passwd"
 	"github.com/rotationalio/rtnl.link/pkg/rtnl"
 	"github.com/rotationalio/rtnl.link/pkg/storage"
+	"github.com/rotationalio/rtnl.link/pkg/storage/models"
 	"github.com/urfave/cli/v2"
 )
 
@@ -66,6 +68,14 @@ func main() {
 			Category: "admin",
 			Usage:    "generate apikeys in maintenance mode",
 			Action:   register,
+			Before:   configure,
+			Flags:    []cli.Flag{},
+		},
+		{
+			Name:     "anonymize",
+			Category: "admin",
+			Usage:    "anonymize API keys (e.g. for creating a test fixture)",
+			Action:   anonymize,
 			Before:   configure,
 			Flags:    []cli.Flag{},
 		},
@@ -156,7 +166,7 @@ func register(c *cli.Context) (err error) {
 	defer store.Close()
 
 	// Generate API key pair
-	apikey := &storage.APIKey{
+	apikey := &models.APIKey{
 		ClientID: keygen.KeyID(),
 	}
 
@@ -170,6 +180,80 @@ func register(c *cli.Context) (err error) {
 	}
 
 	fmt.Println(apikey.ClientID + "-" + secret)
+	return nil
+}
+
+func anonymize(c *cli.Context) (err error) {
+	if !conf.Maintenance {
+		return cli.Exit("server must be in maintenance mode", 1)
+	}
+
+	// Open the database
+	var store storage.Storage
+	if store, err = storage.Open(conf.Storage); err != nil {
+		return cli.Exit(err, 1)
+	}
+	defer store.Close()
+
+	var db *badger.DB
+	if s, ok := store.(*storage.Store); ok {
+		db = s.DB()
+	} else {
+		return cli.Exit("could not fetch db from storage", 1)
+	}
+
+	counts := make(map[string]int)
+	err = db.Update(func(txn *badger.Txn) error {
+		// TODO: provide more semantic method of listing API keys
+		iter := txn.NewIterator(badger.DefaultIteratorOptions)
+		defer iter.Close()
+
+		for iter.Rewind(); iter.Valid(); iter.Next() {
+			item := iter.Item()
+			key := item.Key()
+
+			counts[fmt.Sprintf("keysize %d", len(key))]++
+
+			if len(key) == 16 {
+				apikey := &models.APIKey{}
+				if err = item.Value(apikey.UnmarshalValue); err != nil {
+					fmt.Println(err)
+					counts["errors"]++
+					continue
+				}
+
+				apikey.ClientID = keygen.KeyID()
+				if apikey.DerivedKey, err = passwd.CreateDerivedKey(keygen.Secret()); err != nil {
+					fmt.Println(err)
+					counts["errors"]++
+					continue
+				}
+
+				var data []byte
+				if data, err = apikey.MarshalValue(); err != nil {
+					fmt.Println(err)
+					counts["errors"]++
+					continue
+				}
+
+				if err = txn.Set(key, data); err != nil {
+					return err
+				}
+				counts["anonymized"]++
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return cli.Exit(err, 1)
+	}
+
+	fmt.Println("Count\tMetric")
+	for item, count := range counts {
+		fmt.Printf("%d\t%s\n", count, item)
+	}
 	return nil
 }
 

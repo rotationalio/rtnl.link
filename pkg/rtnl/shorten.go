@@ -9,6 +9,7 @@ import (
 	"github.com/rotationalio/rtnl.link/pkg/base62"
 	"github.com/rotationalio/rtnl.link/pkg/short"
 	"github.com/rotationalio/rtnl.link/pkg/storage"
+	"github.com/rotationalio/rtnl.link/pkg/storage/models"
 	"github.com/rs/zerolog/log"
 )
 
@@ -39,7 +40,7 @@ func (s *Server) ShortenURL(c *gin.Context) {
 	}
 
 	// Save URL to the database
-	model := &storage.ShortURL{URL: long.URL}
+	model := &models.ShortURL{URL: long.URL}
 	model.ID, _ = base62.Decode(sid)
 	model.Expires, _ = long.ExpiresAt()
 
@@ -77,7 +78,7 @@ func (s *Server) ShortURLInfo(c *gin.Context) {
 	}
 
 	// Lookup URL info from the database
-	var model *storage.ShortURL
+	var model *models.ShortURL
 	if model, err = s.db.LoadInfo(sid); err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			c.JSON(http.StatusNotFound, api.ErrorResponse("short url not found"))

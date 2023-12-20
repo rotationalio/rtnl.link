@@ -1,15 +1,15 @@
-package storage_test
+package models_test
 
 import (
 	"testing"
 
 	"github.com/rotationalio/rtnl.link/pkg/keygen"
-	"github.com/rotationalio/rtnl.link/pkg/storage"
+	"github.com/rotationalio/rtnl.link/pkg/storage/models"
 	"github.com/stretchr/testify/require"
 )
 
 func TestAssertAPIKeyLength(t *testing.T) {
-	model := &storage.APIKey{
+	model := &models.APIKey{
 		ClientID: keygen.KeyID(),
 	}
 
