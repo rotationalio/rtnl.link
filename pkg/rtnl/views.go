@@ -1,6 +1,9 @@
 package rtnl
 
-import "github.com/rotationalio/rtnl.link/pkg"
+import (
+	"github.com/rotationalio/rtnl.link/pkg"
+	"github.com/rotationalio/rtnl.link/pkg/api/v1"
+)
 
 func NewWebData() WebData {
 	return WebData{
@@ -10,4 +13,9 @@ func NewWebData() WebData {
 
 type WebData struct {
 	Version string
+}
+
+type InfoDetail struct {
+	WebData
+	Info *api.ShortURL
 }

@@ -172,10 +172,13 @@ func (s *Server) Routes(router *gin.Engine) (err error) {
 	router.GET("/readyz", s.Readyz)
 
 	// Setup HTML template renderer
-	includes := []string{"templates/layout/*.html", "templates/partials/*.html"}
+	includes := []string{"templates/layout/*.html", "templates/components/*.html"}
 	if s.router.HTMLRender, err = NewRender(content, "templates/*.html", includes...); err != nil {
 		return err
 	}
+
+	// NOTE: partials can't have the same names as top-level pages
+	s.router.HTMLRender.(*Render).AddPattern(content, "templates/partials/*.html")
 
 	// Setup CORS configuration
 	corsConf := cors.Config{
@@ -228,7 +231,9 @@ func (s *Server) Routes(router *gin.Engine) (err error) {
 	// Permenant Routes
 	router.GET("/:id", s.Redirect)
 	router.DELETE("/:id", s.Authenticate, s.DeleteShortURL)
-	router.GET("/:id/info", s.Authenticate, s.ShortURLInfo)
+
+	// TODO: add authentication back to this route!
+	router.GET("/:id/info", s.ShortURLInfo)
 
 	// Web Routes
 	// TODO: add authentication

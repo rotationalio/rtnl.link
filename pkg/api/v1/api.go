@@ -48,15 +48,22 @@ type PageQuery struct {
 //===========================================================================
 
 type LongURL struct {
-	URL     string `json:"url"`
-	Expires string `json:"expires,omitempty"`
+	URL     string `json:"url" form:"url"`
+	Expires string `json:"expires,omitempty" form:"expires"`
 }
 
+// TODO: change campaign uint64s to links
 type ShortURL struct {
-	URL     string     `json:"url"`
-	AltURL  string     `json:"alt_url,omitempty"`
-	Visits  uint64     `json:"visits,omitempty"`
-	Expires *time.Time `json:"expires,omitempty"`
+	URL         string     `json:"url"`
+	AltURL      string     `json:"alt_url,omitempty"`
+	Title       string     `json:"title,omitempty"`
+	Description string     `json:"description,omitempty"`
+	Visits      uint64     `json:"visits,omitempty"`
+	Expires     *time.Time `json:"expires,omitempty"`
+	Created     *time.Time `json:"created,omitempty"`
+	Modified    *time.Time `json:"modified,omitempty"`
+	CampaignID  uint64     `json:"campaign_id,omitempty"`
+	Campaigns   []uint64   `json:"campaigns,omitempty"`
 }
 
 //===========================================================================

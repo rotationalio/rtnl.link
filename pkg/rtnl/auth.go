@@ -41,6 +41,7 @@ func (s *Server) Authenticate(c *gin.Context) {
 		if !errors.Is(err, storage.ErrNotFound) {
 			log.Error().Err(err).Msg("could not retrieve client id from the database")
 		}
+		log.Debug().Str("clientID", clientID).Err(err).Msg("could not find client id in the database")
 		c.AbortWithStatusJSON(http.StatusUnauthorized, api.ErrorResponse(api.ErrUnauthenticated))
 		return
 	}
