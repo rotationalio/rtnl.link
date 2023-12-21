@@ -7,7 +7,7 @@ document.body.addEventListener('htmx:wsBeforeMessage', function(e) {
     data: {
       labels: data.Time,
       datasets: [{
-        label: '# of Visits',
+        label: 'URL Activity',
         data: data.Views,
         borderWidth: 1
       }]
