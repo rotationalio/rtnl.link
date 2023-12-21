@@ -11,16 +11,20 @@ import (
 )
 
 var testEnv = map[string]string{
-	"RTNL_MAINTENANCE":       "true",
-	"RTNL_MODE":              "test",
-	"RTNL_LOG_LEVEL":         "debug",
-	"RTNL_CONSOLE_LOG":       "true",
-	"RTNL_BIND_ADDR":         ":8888",
-	"RTNL_ALLOW_ORIGINS":     "http://localhost:8888",
-	"RTNL_ORIGIN":            "http://localhost:8888",
-	"RTNL_ALT_ORIGIN":        "http://127.0.0.1:8888",
-	"RTNL_STORAGE_READ_ONLY": "true",
-	"RTNL_STORAGE_DATA_PATH": "/data/db",
+	"RTNL_MAINTENANCE":          "true",
+	"RTNL_MODE":                 "test",
+	"RTNL_LOG_LEVEL":            "debug",
+	"RTNL_CONSOLE_LOG":          "true",
+	"RTNL_BIND_ADDR":            ":8888",
+	"RTNL_ALLOW_ORIGINS":        "http://localhost:8888",
+	"RTNL_ORIGIN":               "http://localhost:8888",
+	"RTNL_ALT_ORIGIN":           "http://127.0.0.1:8888",
+	"RTNL_STORAGE_READ_ONLY":    "true",
+	"RTNL_STORAGE_DATA_PATH":    "/data/db",
+	"RTNL_ENSIGN_PATH":          "/credentials/ensign.json",
+	"RTNL_ENSIGN_CLIENT_ID":     "ensignclientid",
+	"RTNL_ENSIGN_CLIENT_SECRET": "ensignclientsecret",
+	"RTNL_ENSIGN_TOPIC":         "shortcrust-testing",
 }
 
 func TestConfig(t *testing.T) {
@@ -43,9 +47,55 @@ func TestConfig(t *testing.T) {
 	require.Equal(t, testEnv["RTNL_ALT_ORIGIN"], conf.AltOrigin)
 	require.True(t, conf.Storage.ReadOnly)
 	require.Equal(t, testEnv["RTNL_STORAGE_DATA_PATH"], conf.Storage.DataPath)
+	require.True(t, conf.Ensign.Maintenance)
+	require.Equal(t, testEnv["RTNL_ENSIGN_PATH"], conf.Ensign.Path)
+	require.Equal(t, testEnv["RTNL_ENSIGN_CLIENT_ID"], conf.Ensign.ClientID)
+	require.Equal(t, testEnv["RTNL_ENSIGN_CLIENT_SECRET"], conf.Ensign.ClientSecret)
+	require.Equal(t, testEnv["RTNL_ENSIGN_TOPIC"], conf.Ensign.Topic)
 
 	// Ensure the sentry release is correctly set
 	// require.True(t, strings.HasPrefix(conf.Sentry.GetRelease(), "rtnl@"))
+}
+
+func TestEnsignValidation(t *testing.T) {
+	testCases := []struct {
+		conf config.EnsignConfig
+		err  error
+	}{
+		{
+			config.EnsignConfig{},
+			config.ErrInvalidEnsignCredentials,
+		},
+		{
+			config.EnsignConfig{ClientID: "foo"},
+			config.ErrInvalidEnsignCredentials,
+		},
+		{
+			config.EnsignConfig{ClientSecret: "foo"},
+			config.ErrInvalidEnsignCredentials,
+		},
+		{
+			config.EnsignConfig{Path: "credentials.json"},
+			nil,
+		},
+		{
+			config.EnsignConfig{ClientID: "foo", ClientSecret: "bar"},
+			nil,
+		},
+		{
+			config.EnsignConfig{Path: "zap", ClientID: "foo", ClientSecret: "bar"},
+			nil,
+		},
+	}
+
+	for i, tc := range testCases {
+		err := tc.conf.Validate()
+		if tc.err != nil {
+			require.ErrorIs(t, err, tc.err, "test case %d failed", i)
+		} else {
+			require.NoError(t, err, "test case %d failed", i)
+		}
+	}
 }
 
 // Returns the current environment for the specified keys, or if no keys are specified
