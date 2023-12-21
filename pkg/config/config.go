@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/rotationalio/confire"
+	"github.com/rotationalio/go-ensign"
 	"github.com/rotationalio/rtnl.link/pkg/logger"
 	"github.com/rs/zerolog"
 )
@@ -29,6 +30,7 @@ type Config struct {
 	Origin       string              `default:"https://rtnl.link"`
 	AltOrigin    string              `split_words:"true" default:"https://r8l.co"`
 	Storage      StorageConfig
+	Ensign       EnsignConfig
 	processed    bool
 	originURL    *url.URL
 	altURL       *url.URL
@@ -37,6 +39,13 @@ type Config struct {
 type StorageConfig struct {
 	ReadOnly bool   `split_words:"true" default:"false"`
 	DataPath string `split_words:"true" required:"true"`
+}
+
+type EnsignConfig struct {
+	Path         string `required:"false"`
+	ClientID     string `split_words:"true"`
+	ClientSecret string `split_words:"true"`
+	Topic        string `default:"shortcrust-production"`
 }
 
 // New creates and processes a Config from the environment ready for use. If the
@@ -50,6 +59,10 @@ func New() (conf Config, err error) {
 	// if conf.Sentry.Release == "" {
 	// 	conf.Sentry.Release = fmt.Sprintf("rtnl@%s", pkg.Version())
 	// }
+
+	if err = conf.Validate(); err != nil {
+		return conf, err
+	}
 
 	conf.processed = true
 	return conf, nil
@@ -80,6 +93,11 @@ func (c Config) Validate() (err error) {
 	if c.Mode != gin.ReleaseMode && c.Mode != gin.DebugMode && c.Mode != gin.TestMode {
 		return fmt.Errorf("invalid configuration: %q is not a valid gin mode", c.Mode)
 	}
+
+	if err = c.Ensign.Validate(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -97,4 +115,28 @@ func (c *Config) MakeOriginURLs(sid string) (link string, alt string) {
 		alt = c.altURL.ResolveReference(&url.URL{Path: sid}).String()
 	}
 	return link, alt
+}
+
+func (c EnsignConfig) Validate() error {
+	// Must have either the path specified or the client id and api key
+	if c.Path == "" {
+		if c.ClientID == "" || c.ClientSecret == "" {
+			return ErrInvalidEnsignCredentials
+		}
+	}
+
+	if c.ClientID == "" || c.ClientSecret == "" {
+		if c.Path == "" {
+			return ErrInvalidEnsignCredentials
+		}
+	}
+
+	return nil
+}
+
+func (c EnsignConfig) Options() ensign.Option {
+	if c.Path != "" {
+		return ensign.WithLoadCredentials(c.Path)
+	}
+	return ensign.WithCredentials(c.ClientID, c.ClientSecret)
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/rotationalio/go-ensign"
 	"github.com/rotationalio/rtnl.link/pkg"
 	"github.com/rotationalio/rtnl.link/pkg/config"
 	"github.com/rotationalio/rtnl.link/pkg/logger"
@@ -45,6 +46,7 @@ type Server struct {
 	router   *gin.Engine        // The gin router for mapping endpoints to handlers
 	db       storage.Storage    // Database storage for URLs and API keys
 	upgrader websocket.Upgrader // Upgrades http connections to open a websocket stream
+	ensign   *ensign.Client     // Ensign client to publish and subscribe to rtnl updates
 	healthy  bool               // Indicates that the service is online and healthy
 	ready    bool               // Indicates that the service is ready to accept requests
 	started  time.Time          // The timestamp that the server was started (for uptime)
@@ -104,9 +106,13 @@ func New(conf config.Config) (s *Server, err error) {
 }
 
 func (s *Server) Serve() (err error) {
-	// Setup database connection
+	// Setup database connections
 	if !s.conf.Maintenance {
 		if s.db, err = storage.Open(s.conf.Storage); err != nil {
+			return err
+		}
+
+		if s.ensign, err = ensign.New(s.conf.Ensign.Options()); err != nil {
 			return err
 		}
 	}
@@ -166,8 +172,16 @@ func (s *Server) Shutdown(ctx context.Context) (err error) {
 		err = errors.Join(err, serr)
 	}
 
-	if serr := s.db.Close(); serr != nil {
-		err = errors.Join(err, serr)
+	if s.db != nil {
+		if serr := s.db.Close(); serr != nil {
+			err = errors.Join(err, serr)
+		}
+	}
+
+	if s.ensign != nil {
+		if serr := s.ensign.Close(); serr != nil {
+			err = errors.Join(err, serr)
+		}
 	}
 
 	return err
