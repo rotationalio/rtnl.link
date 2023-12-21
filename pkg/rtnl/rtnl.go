@@ -227,6 +227,9 @@ func (s *Server) Routes(router *gin.Engine) (err error) {
 		v1.GET("/status", s.Status)
 		v1.POST("/shorten", s.Authenticate, s.ShortenURL)
 		v1.GET("/links", s.Authenticate, s.ShortURLList)
+		v1.POST("/links", s.Authenticate, s.ShortenURL)
+		v1.GET("/links/:id", s.Authenticate, s.ShortURLInfo)
+		v1.DELETE("/links/:id", s.Authenticate, s.DeleteShortURL)
 	}
 
 	// Web Routes
@@ -236,10 +239,8 @@ func (s *Server) Routes(router *gin.Engine) (err error) {
 
 	// Permenant Routes
 	router.GET("/:id", s.Redirect)
+	router.GET("/:id/info", s.ShortURLDetail)
 	router.DELETE("/:id", s.Authenticate, s.DeleteShortURL)
-
-	// TODO: add authentication back to this route!
-	router.GET("/:id/info", s.ShortURLInfo)
 
 	// NotFound and NotAllowed routes
 	router.NoRoute(s.NotFound)
