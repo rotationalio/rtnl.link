@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/rotationalio/go-ensign"
 	"github.com/rotationalio/rtnl.link/pkg"
 	api "github.com/rotationalio/rtnl.link/pkg/api/v1"
 	"github.com/rs/zerolog/log"
@@ -37,6 +38,7 @@ func (s *Server) Updates(c *gin.Context) {
 		err    error
 		conn   *websocket.Conn
 		linkID string
+		sub    *ensign.Subscription
 	)
 
 	// Upgrade the connection to an http/2 connection for websockets
@@ -51,16 +53,30 @@ func (s *Server) Updates(c *gin.Context) {
 	linkID = c.Param("id")
 	log.Info().Str("link_id", linkID).Msg("updates websocket opened")
 
-	// TODO: subscribe to ensign here to push notifications down
+	// Subscribe to the ensign topic for updates
+	if sub, err = s.analytics.Subscribe(); err != nil {
+		log.Error().Err(err).Msg("could not connect to ensign")
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse(err))
+		return
+	}
+	defer sub.Close()
+
 	// In the meantime, just write data back to the server
-	i := 0
-	for {
-		i++
-		message := &api.Click{
-			Time:      time.Now().Truncate(time.Hour).Format("2006-01-02 15:00"),
-			Views:     1,
-			UserAgent: "Chrome",
-			IPAddr:    "10.10.27.1",
+	for event := range sub.C {
+		// Only publish click events to the updates stream
+		if event.Type.Name != "Click" {
+			continue
+		}
+
+		// Filter the message if necessary
+		if linkID != "" && event.Metadata["id"] != linkID {
+			continue
+		}
+
+		message := &api.Click{}
+		if err = message.UnmarshalValue(event.Data); err != nil {
+			log.Warn().Err(err).Str("type", event.Type.String()).Msg("could not unmarshal click event for update stream")
+			continue
 		}
 
 		if err = conn.WriteJSON(message); err != nil {

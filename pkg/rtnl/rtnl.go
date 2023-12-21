@@ -20,6 +20,7 @@ import (
 	"github.com/rotationalio/rtnl.link/pkg/config"
 	"github.com/rotationalio/rtnl.link/pkg/logger"
 	"github.com/rotationalio/rtnl.link/pkg/storage"
+	"github.com/rotationalio/rtnl.link/pkg/stream"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -40,16 +41,17 @@ func init() {
 // Implements the link shortening service and API.
 type Server struct {
 	sync.RWMutex
-	conf     config.Config      // Primary source of truth for server configuration
-	srv      *http.Server       // The HTTP server configuration for handling requests
-	router   *gin.Engine        // The gin router for mapping endpoints to handlers
-	db       storage.Storage    // Database storage for URLs and API keys
-	upgrader websocket.Upgrader // Upgrades http connections to open a websocket stream
-	healthy  bool               // Indicates that the service is online and healthy
-	ready    bool               // Indicates that the service is ready to accept requests
-	started  time.Time          // The timestamp that the server was started (for uptime)
-	url      *url.URL           // The endpoint that the server is hosted on
-	echan    chan error         // Sending errors down this channel stops the server (is fatal)
+	conf      config.Config      // Primary source of truth for server configuration
+	srv       *http.Server       // The HTTP server configuration for handling requests
+	router    *gin.Engine        // The gin router for mapping endpoints to handlers
+	db        storage.Storage    // Database storage for URLs and API keys
+	upgrader  websocket.Upgrader // Upgrades http connections to open a websocket stream
+	analytics stream.Stream      // Ensign client to publish and subscribe to rtnl updates
+	healthy   bool               // Indicates that the service is online and healthy
+	ready     bool               // Indicates that the service is ready to accept requests
+	started   time.Time          // The timestamp that the server was started (for uptime)
+	url       *url.URL           // The endpoint that the server is hosted on
+	echan     chan error         // Sending errors down this channel stops the server (is fatal)
 }
 
 func New(conf config.Config) (s *Server, err error) {
@@ -104,9 +106,13 @@ func New(conf config.Config) (s *Server, err error) {
 }
 
 func (s *Server) Serve() (err error) {
-	// Setup database connection
+	// Setup database connections
 	if !s.conf.Maintenance {
 		if s.db, err = storage.Open(s.conf.Storage); err != nil {
+			return err
+		}
+
+		if s.analytics, err = stream.New(s.conf.Ensign); err != nil {
 			return err
 		}
 	}
@@ -166,8 +172,16 @@ func (s *Server) Shutdown(ctx context.Context) (err error) {
 		err = errors.Join(err, serr)
 	}
 
-	if serr := s.db.Close(); serr != nil {
-		err = errors.Join(err, serr)
+	if s.db != nil {
+		if serr := s.db.Close(); serr != nil {
+			err = errors.Join(err, serr)
+		}
+	}
+
+	if s.analytics != nil {
+		if serr := s.analytics.Close(); serr != nil {
+			err = errors.Join(err, serr)
+		}
 	}
 
 	return err
