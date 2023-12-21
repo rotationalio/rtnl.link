@@ -3,7 +3,6 @@ package rtnl
 import (
 	"errors"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rotationalio/rtnl.link/pkg/api/v1"
@@ -112,7 +111,7 @@ func (s *Server) ShortURLInfo(c *gin.Context) {
 
 	c.Negotiate(http.StatusOK, gin.Negotiate{
 		Offered:  []string{gin.MIMEHTML, gin.MIMEJSON},
-		HTMLName: "info.html",
+		HTMLName: "links_detail.html",
 		HTMLData: out.WebData(),
 		JSONData: out,
 	})
@@ -168,7 +167,6 @@ func (s *Server) ShortURLList(c *gin.Context) {
 	}
 
 	// Retrieve the page from the database
-	time.Sleep(5 * time.Second)
 
 	// Create the API response to send back to the user.
 	out = &api.ShortURLList{}
