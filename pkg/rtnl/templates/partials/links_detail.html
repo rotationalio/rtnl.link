@@ -1,12 +1,91 @@
-<ul>
-  <li>{{ .Info.URL }}</li>
-  <li>{{ .Info.AltURL }}</li>
-  <li>{{ .Info.Title }}</li>
-  <li>{{ .Info.Description }}</li>
-  <li>{{ .Info.Visits }}</li>
-  <li>{{ .Info.Expires }}</li>
-  <li>{{ .Info.Created }}</li>
-  <li>{{ .Info.Modified }}</li>
-  <li>{{ .Info.CampaignID }}</li>
-  <li>{{ .Info.Campaigns }}</li>
-</ul>
+<h2 class="text-2xl text-[#192E5B] font-bold mb-12">Rotational URL Info</h2>
+<div class="flex justify-center gap-16 mb-16">
+  <div>
+    <p class="font-semibold">Rotational URL:</p>
+  <p>{{ .Info.URL }}</p>
+  </div>
+  <div>
+    <p class="font-semibold">Alt URL:</p>
+    <p>{{ .Info.AltURL }}</p>
+  </div>
+</div>
+
+<table class="mx-auto w-11/12 overflow-auto">
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Description</th>
+      <th>Visits</th>
+      <th>Expires</th>
+      <th>Created</th>
+      <th>Modified</th>
+      <th>Campaign ID</th>
+      <th>Campaigns</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      {{ $title := .Info.Title }}
+      {{ if $title }}
+      <td>{{ .Info.Title }}</td>
+      {{ else }}
+      <td>-</td>
+      {{ end }}
+
+      {{ $description := .Info.Description }}
+      {{ if $description }}
+      <td>{{ .Info.Description }}</td>
+      {{ else }}
+      <td>-</td>
+      {{ end }}
+
+      {{ $visits := .Info.Visits }}
+      {{ if $visits }}
+      <td>{{ .Info.Visits }}</td>
+      {{ else }}
+      <td>-</td>
+      {{ end }}
+
+      {{ $expires := .Info.Expires }}
+      {{ if $expires }}
+      <td>{{ .Info.Expires }}</td>
+      {{ else }}
+      <td>-</td>
+      {{ end }}
+
+      {{ $created := .Info.Created.Format "January 2, 2006 15:04:05" }}
+      {{ if $created }}
+      <td>{{ $created }}</td>
+      {{ else }}
+      <td>-</td>
+      {{ end }}
+
+      {{ $modified := .Info.Modified.Format "January 2, 2006 15:04:05" }}
+      {{ if $modified }}
+      <td>{{ $modified }}</td>
+      {{ else }}
+      <td>-</td>
+      {{ end }}
+
+      {{ $campaignID := .Info.CampaignID }}
+      {{ if $campaignID }}
+      <td>{{ .Info.CampaignID }}</td>
+      {{ else }}
+      <td>-</td>
+      {{ end }}
+
+      {{ $campaigns := .Info.Campaigns }}
+      {{ if $campaigns }}
+      <td>{{ .Info.Campaigns }}</td>
+      {{ else }}
+      <td>-</td>
+      {{ end }}
+    </tr>
+  </tbody>
+</table>
+
+<div class="mt-20 flex justify-center gap-12">
+  <a href="/links" class="block w-[140px] bg-[#1D65A6FF] hover:bg-[#192E5B] text-white p-2 rounded">View All URLs</a>
+  <a href="/" class="block w-[140px] bg-[#238553FF] hover:bg-[#1C6941] text-white p-2 rounded">Create New URL</a>
+  <button type="submit" class="block w-[140px] bg-red-700 hover:bg-red-900 text-white p-2 rounded">Delete URL</button>
+</div>
