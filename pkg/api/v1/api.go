@@ -19,6 +19,7 @@ type Service interface {
 	ShortenURL(context.Context, *LongURL) (*ShortURL, error)
 	ShortURLInfo(context.Context, string) (*ShortURL, error)
 	DeleteShortURL(context.Context, string) error
+	Updates(context.Context, string) (<-chan *Click, error)
 }
 
 //===========================================================================
