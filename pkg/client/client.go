@@ -93,7 +93,7 @@ func (c *APIv1) ShortenURL(ctx context.Context, in *api.LongURL) (out *api.Short
 }
 
 func (c *APIv1) ShortURLInfo(ctx context.Context, id string) (out *api.ShortURL, err error) {
-	endpoint := fmt.Sprintf("/%s/info", id)
+	endpoint := fmt.Sprintf("/v1/links/%s", id)
 
 	var req *http.Request
 	if req, err = c.NewRequest(ctx, http.MethodGet, endpoint, nil, nil); err != nil {
@@ -108,7 +108,7 @@ func (c *APIv1) ShortURLInfo(ctx context.Context, id string) (out *api.ShortURL,
 }
 
 func (c *APIv1) DeleteShortURL(ctx context.Context, id string) (err error) {
-	endpoint := fmt.Sprintf("/%s", id)
+	endpoint := fmt.Sprintf("/v1/links/%s", id)
 
 	var req *http.Request
 	if req, err = c.NewRequest(ctx, http.MethodDelete, endpoint, nil, nil); err != nil {

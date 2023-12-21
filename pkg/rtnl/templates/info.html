@@ -93,6 +93,8 @@
     <a href="/" class="block w-[140px] bg-[#238553FF] hover:bg-[#1C6941] text-white p-2 rounded">Create New URL</a>
     <button type="submit" class="block w-[140px] bg-red-700 hover:bg-red-900 text-white p-2 rounded">Delete URL</button>
   </div>
+<section class="text-center py-14" hx-get="/v1/links/{{ .ID }}" hx-trigger="load">
+  <i alt="Loading..." class="fa-solid fa-spinner fa-spin htmx-indicator"></i>
 </section>
 
 {{ end }}
