@@ -1,4 +1,3 @@
-// TODO: remove temporary API key and fetch from local storage.
 const API_STORAGE_KEY = "rtnlapistoragekey";
 
 function APIKey() {

@@ -3,9 +3,9 @@ package rtnl
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rotationalio/rtnl.link/pkg"
 	"github.com/rotationalio/rtnl.link/pkg/api/v1"
 	"github.com/rotationalio/rtnl.link/pkg/base62"
 	"github.com/rotationalio/rtnl.link/pkg/short"
@@ -45,24 +45,34 @@ func (s *Server) ShortenURL(c *gin.Context) {
 	model.ID, _ = base62.Decode(sid)
 	model.Expires, _ = long.ExpiresAt()
 
+	// By default we attempt to create the model, but if it already exists then we do
+	// not modify it and return a 200 status instead of a 201 status.
+	code := http.StatusCreated
 	if err = s.db.Save(model); err != nil {
-		if errors.Is(err, storage.ErrAlreadyExists) {
-			c.JSON(http.StatusConflict, api.ErrorResponse("shortened url already exists"))
+		// If the URL already exists in the database return it without an error.
+		// If the error is not an already exists error than return 500.
+		if !errors.Is(err, storage.ErrAlreadyExists) {
+			log.Error().Err(err).Msg("could not store shortened url")
+			c.JSON(http.StatusInternalServerError, api.ErrorResponse("unable to complete request"))
 			return
 		}
 
-		log.Error().Err(err).Msg("could not store shortened url")
-		c.JSON(http.StatusInternalServerError, api.ErrorResponse("unable to complete request"))
-		return
+		// Attempt to load the already created model from the database.
+		if model, err = s.db.LoadInfo(model.ID); err != nil {
+			log.Error().Err(err).Msg("could not fetch short url after already exists error")
+			c.JSON(http.StatusInternalServerError, api.ErrorResponse("unable to complete request"))
+			return
+		}
+
+		// If we loaded the model without creating it, then return a 200
+		code = http.StatusOK
 	}
 
-	out := &api.ShortURL{}
+	// Create the output response to send back to the user.
+	out := model.ToAPI()
 	out.URL, out.AltURL = s.conf.MakeOriginURLs(sid)
-	if !model.Expires.IsZero() {
-		out.Expires = &model.Expires
-	}
 
-	c.Negotiate(http.StatusCreated, gin.Negotiate{
+	c.Negotiate(code, gin.Negotiate{
 		Offered:  []string{gin.MIMEHTML, gin.MIMEJSON},
 		HTMLName: "created.html",
 		HTMLData: out,
@@ -96,31 +106,14 @@ func (s *Server) ShortURLInfo(c *gin.Context) {
 		return
 	}
 
-	out := &api.ShortURL{
-		Title:       model.Title,
-		Description: model.Description,
-		Visits:      model.Visits,
-		CampaignID:  model.CampaignID,
-		Campaigns:   model.Campaigns,
-	}
+	// Create the API response to send back to the user.
+	out := model.ToAPI()
 	out.URL, out.AltURL = s.conf.MakeOriginURLs(base62.Encode(sid))
-
-	if !model.Expires.IsZero() {
-		out.Expires = &model.Expires
-	}
-
-	if !model.Created.IsZero() {
-		out.Created = &model.Created
-	}
-
-	if !model.Modified.IsZero() {
-		out.Modified = &model.Modified
-	}
 
 	c.Negotiate(http.StatusOK, gin.Negotiate{
 		Offered:  []string{gin.MIMEHTML, gin.MIMEJSON},
 		HTMLName: "info.html",
-		HTMLData: &InfoDetail{WebData: WebData{Version: pkg.Version()}, Info: out},
+		HTMLData: out.WebData(),
 		JSONData: out,
 	})
 }
@@ -152,4 +145,38 @@ func (s *Server) DeleteShortURL(c *gin.Context) {
 
 	log.Info().Uint64("id", sid).Msg("short url deleted")
 	c.JSON(http.StatusOK, &api.Reply{Success: true})
+}
+
+func (s *Server) ShortURLList(c *gin.Context) {
+	var (
+		err  error
+		page *api.PageQuery
+		out  *api.ShortURLList
+	)
+
+	// Bind and validate the page query request
+	page = &api.PageQuery{}
+	if err = c.BindQuery(page); err != nil {
+		log.Warn().Err(err).Msg("could not bind page query")
+		c.JSON(http.StatusBadRequest, api.ErrorResponse("could not parse page query from request"))
+		return
+	}
+
+	if err = page.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse(err))
+		return
+	}
+
+	// Retrieve the page from the database
+	time.Sleep(5 * time.Second)
+
+	// Create the API response to send back to the user.
+	out = &api.ShortURLList{}
+
+	c.Negotiate(http.StatusOK, gin.Negotiate{
+		Offered:  []string{gin.MIMEHTML, gin.MIMEJSON},
+		HTMLName: "links_list.html",
+		HTMLData: out.WebData(),
+		JSONData: out,
+	})
 }

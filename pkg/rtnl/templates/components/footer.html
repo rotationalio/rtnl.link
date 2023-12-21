@@ -1,13 +1,8 @@
 {{ define "footer" }}
-<footer class="container">
-  <hr />
-  <div class="row">
-    <div class="col">
-      <p id="application-version" class="text-muted text-start"><small>Application v{{ .Version }}</small></p>
-    </div>
-    <div class="col">
-      <p class="text-muted text-end"><small>&copy; 2023 Rotational Labs, Inc.</small></p>
-    </div>
+<footer>
+  <div class="m-auto flex justify-between lg:w-[1024px]">
+    <p id="application-version">Application v{{ .Version }}</p>
+    <p class="text-end">&copy; 2023 Rotational Labs, Inc.</p>
   </div>
 </footer>
 {{ end }}

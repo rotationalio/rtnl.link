@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/google/go-querystring/query"
 	"github.com/rotationalio/rtnl.link/pkg/api/v1"
 )
 
@@ -119,6 +120,28 @@ func (c *APIv1) DeleteShortURL(ctx context.Context, id string) (err error) {
 	}
 
 	return nil
+}
+
+func (c *APIv1) ShortURLList(ctx context.Context, page *api.PageQuery) (out *api.ShortURLList, err error) {
+	var params *url.Values
+	if page != nil {
+		var values url.Values
+		if values, err = query.Values(page); err != nil {
+			return nil, fmt.Errorf("could not encode query params: %w", err)
+		}
+		params = &values
+	}
+
+	var req *http.Request
+	if req, err = c.NewRequest(ctx, http.MethodGet, "/v1/links", nil, params); err != nil {
+		return nil, err
+	}
+
+	if _, err = c.Do(req, &out, true); err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 //===========================================================================

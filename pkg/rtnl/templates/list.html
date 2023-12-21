@@ -1,0 +1,8 @@
+{{ template "base" . }}
+{{ define "content" }}
+
+<section class="text-center py-14" hx-get="/v1/links" hx-trigger="load">
+  <i alt="Loading..." class="fa-solid fa-spinner fa-spin htmx-indicator"></i>
+</section>
+
+{{ end }}

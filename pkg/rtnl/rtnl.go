@@ -226,7 +226,13 @@ func (s *Server) Routes(router *gin.Engine) (err error) {
 		// Heartbeat route (no authentication required)
 		v1.GET("/status", s.Status)
 		v1.POST("/shorten", s.Authenticate, s.ShortenURL)
+		v1.GET("/links", s.Authenticate, s.ShortURLList)
 	}
+
+	// Web Routes
+	// TODO: add authentication
+	router.GET("/", s.Index)
+	router.GET("/links", s.List)
 
 	// Permenant Routes
 	router.GET("/:id", s.Redirect)
@@ -234,10 +240,6 @@ func (s *Server) Routes(router *gin.Engine) (err error) {
 
 	// TODO: add authentication back to this route!
 	router.GET("/:id/info", s.ShortURLInfo)
-
-	// Web Routes
-	// TODO: add authentication
-	router.GET("/", s.Index)
 
 	// NotFound and NotAllowed routes
 	router.NoRoute(s.NotFound)

@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"time"
 
+	"github.com/rotationalio/rtnl.link/pkg/api/v1"
 	"github.com/vmihailenco/msgpack/v5"
 )
 
@@ -47,4 +48,31 @@ func (m *ShortURL) MarshalValue() ([]byte, error) {
 
 func (m *ShortURL) UnmarshalValue(data []byte) error {
 	return msgpack.Unmarshal(data, m)
+}
+
+// Creates an api.ShortURL object and populates it with the fields from the model that
+// can be populated directly. Note that URL and AltURL cannot be directly populated
+// without a configuration object.
+func (m *ShortURL) ToAPI() *api.ShortURL {
+	out := &api.ShortURL{
+		Title:       m.Title,
+		Description: m.Description,
+		Visits:      m.Visits,
+		CampaignID:  m.CampaignID,
+		Campaigns:   m.Campaigns,
+	}
+
+	if !m.Expires.IsZero() {
+		out.Expires = &m.Expires
+	}
+
+	if !m.Created.IsZero() {
+		out.Created = &m.Created
+	}
+
+	if !m.Modified.IsZero() {
+		out.Modified = &m.Modified
+	}
+
+	return out
 }

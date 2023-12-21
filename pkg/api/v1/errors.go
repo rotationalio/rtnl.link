@@ -21,6 +21,7 @@ var (
 	ErrNoAuthorization    = errors.New("no authorization header in request")
 	ErrInvalidToken       = errors.New("invalid bearer token in Authorization header")
 	ErrUnauthenticated    = errors.New("this endpoint requires authentication")
+	ErrForwardsBackwards  = errors.New("cannot specify both prev and next page token in page query")
 )
 
 // Construct a new response for an error or simply return unsuccessful.
