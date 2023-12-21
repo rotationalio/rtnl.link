@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/rotationalio/go-ensign"
 	api "github.com/rotationalio/go-ensign/api/v1beta1"
 	mimetype "github.com/rotationalio/go-ensign/mimetype/v1beta1"
@@ -28,6 +29,16 @@ type Click struct {
 	Views     int    `json:"views" msgpack:"views"`
 	UserAgent string `json:"user_agent" msgpack:"user_agent"`
 	IPAddr    string `json:"ip_address" msgpack:"ip_address"`
+}
+
+func Clicked(c *gin.Context) *Click {
+	return &Click{
+		URL:       c.Request.URL.String(),
+		Time:      time.Now().Truncate(time.Hour).In(time.UTC).Format(time.RFC3339),
+		Views:     1,
+		UserAgent: c.GetHeader("User-Agent"),
+		IPAddr:    c.ClientIP(),
+	}
 }
 
 func (c *Click) Event() *ensign.Event {

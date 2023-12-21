@@ -71,6 +71,9 @@ func (s *Server) ShortenURL(c *gin.Context) {
 	out := model.ToAPI()
 	out.URL, out.AltURL = s.conf.MakeOriginURLs(sid)
 
+	// Send the shortened event to ensign
+	s.analytics.Shortened(out)
+
 	c.Negotiate(code, gin.Negotiate{
 		Offered:  []string{gin.MIMEHTML, gin.MIMEJSON},
 		HTMLName: "created.html",
@@ -141,6 +144,9 @@ func (s *Server) DeleteShortURL(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse("unable to complete request"))
 		return
 	}
+
+	// Send the deleted event to ensign
+	s.analytics.Deleted(c.Param("id"))
 
 	log.Info().Uint64("id", sid).Msg("short url deleted")
 	c.JSON(http.StatusOK, &api.Reply{Success: true})
