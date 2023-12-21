@@ -42,6 +42,7 @@ type StorageConfig struct {
 }
 
 type EnsignConfig struct {
+	Maintenance  bool   `env:"RTNL_MAINTENANCE"`
 	Path         string `required:"false"`
 	ClientID     string `split_words:"true"`
 	ClientSecret string `split_words:"true"`
@@ -118,6 +119,10 @@ func (c *Config) MakeOriginURLs(sid string) (link string, alt string) {
 }
 
 func (c EnsignConfig) Validate() error {
+	if c.Maintenance {
+		return nil
+	}
+
 	// Must have either the path specified or the client id and api key
 	if c.Path == "" {
 		if c.ClientID == "" || c.ClientSecret == "" {

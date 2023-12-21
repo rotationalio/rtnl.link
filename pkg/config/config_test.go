@@ -47,6 +47,7 @@ func TestConfig(t *testing.T) {
 	require.Equal(t, testEnv["RTNL_ALT_ORIGIN"], conf.AltOrigin)
 	require.True(t, conf.Storage.ReadOnly)
 	require.Equal(t, testEnv["RTNL_STORAGE_DATA_PATH"], conf.Storage.DataPath)
+	require.True(t, conf.Ensign.Maintenance)
 	require.Equal(t, testEnv["RTNL_ENSIGN_PATH"], conf.Ensign.Path)
 	require.Equal(t, testEnv["RTNL_ENSIGN_CLIENT_ID"], conf.Ensign.ClientID)
 	require.Equal(t, testEnv["RTNL_ENSIGN_CLIENT_SECRET"], conf.Ensign.ClientSecret)
