@@ -145,6 +145,7 @@ func (c *APIv1) ShortURLList(ctx context.Context, page *api.PageQuery) (out *api
 	return out, nil
 }
 
+// TODO: figure out how to gracefully close the connection!
 func (c *APIv1) Updates(ctx context.Context, id string) (_ <-chan *api.Click, err error) {
 	path := "/v1/updates"
 	if id != "" {
@@ -178,6 +179,8 @@ func (c *APIv1) Updates(ctx context.Context, id string) (_ <-chan *api.Click, er
 	// Start the reader go routine
 	go func(updates chan<- *api.Click) {
 		defer conn.Close()
+		defer close(updates)
+
 		for {
 			click := &api.Click{}
 			if err = conn.ReadJSON(click); err != nil {
