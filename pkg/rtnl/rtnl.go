@@ -15,6 +15,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	"github.com/rotationalio/rtnl.link/pkg"
 	"github.com/rotationalio/rtnl.link/pkg/config"
 	"github.com/rotationalio/rtnl.link/pkg/logger"
@@ -39,15 +40,16 @@ func init() {
 // Implements the link shortening service and API.
 type Server struct {
 	sync.RWMutex
-	conf    config.Config   // Primary source of truth for server configuration
-	srv     *http.Server    // The HTTP server configuration for handling requests
-	router  *gin.Engine     // The gin router for mapping endpoints to handlers
-	db      storage.Storage // Database storage for URLs and API keys
-	healthy bool            // Indicates that the service is online and healthy
-	ready   bool            // Indicates that the service is ready to accept requests
-	started time.Time       // The timestamp that the server was started (for uptime)
-	url     *url.URL        // The endpoint that the server is hosted on
-	echan   chan error      // Sending errors down this channel stops the server (is fatal)
+	conf     config.Config      // Primary source of truth for server configuration
+	srv      *http.Server       // The HTTP server configuration for handling requests
+	router   *gin.Engine        // The gin router for mapping endpoints to handlers
+	db       storage.Storage    // Database storage for URLs and API keys
+	upgrader websocket.Upgrader // Upgrades http connections to open a websocket stream
+	healthy  bool               // Indicates that the service is online and healthy
+	ready    bool               // Indicates that the service is ready to accept requests
+	started  time.Time          // The timestamp that the server was started (for uptime)
+	url      *url.URL           // The endpoint that the server is hosted on
+	echan    chan error         // Sending errors down this channel stops the server (is fatal)
 }
 
 func New(conf config.Config) (s *Server, err error) {
@@ -84,11 +86,18 @@ func New(conf config.Config) (s *Server, err error) {
 		IdleTimeout:       30 * time.Second,
 	}
 
+	// Create the upgrader
+	upgrader := websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+	}
+
 	s = &Server{
-		conf:   conf,
-		srv:    srv,
-		router: router,
-		echan:  make(chan error, 1),
+		conf:     conf,
+		srv:      srv,
+		router:   router,
+		upgrader: upgrader,
+		echan:    make(chan error, 1),
 	}
 
 	return s, nil
@@ -226,10 +235,12 @@ func (s *Server) Routes(router *gin.Engine) (err error) {
 		// Heartbeat route (no authentication required)
 		v1.GET("/status", s.Status)
 		v1.POST("/shorten", s.Authenticate, s.ShortenURL)
+		v1.GET("/updates", s.Authenticate, s.Updates)
 		v1.GET("/links", s.Authenticate, s.ShortURLList)
 		v1.POST("/links", s.Authenticate, s.ShortenURL)
 		v1.GET("/links/:id", s.Authenticate, s.ShortURLInfo)
 		v1.DELETE("/links/:id", s.Authenticate, s.DeleteShortURL)
+		v1.GET("/links/:id/updates", s.Authenticate, s.Updates)
 	}
 
 	// Web Routes
