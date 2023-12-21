@@ -5,8 +5,8 @@
   <i alt="Loading..." class="fa-solid fa-spinner fa-spin htmx-indicator"></i>
 </section>
 
-<div class="mb-10 mx-auto">
-  <canvas id="myChart"></canvas>
+<div hx-ws="v1/links/{{ .ID }}/updates" hx-target="link-detail-chart" hx-trigger="every 30s" class="mb-10">
+  <canvas id="link-detail-chart"></canvas>
 </div>
 
 {{ end }}
@@ -14,6 +14,6 @@
 {{ define "appcode" }}
 
 <script src="https://unpkg.com/chart.js@4.4.1/dist/chart.umd.js"></script>
-<script src="/static/js/chart.js"></script>
+<script src="/static/js/link-detail-chart.js"></script>
 
 {{ end }}

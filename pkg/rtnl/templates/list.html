@@ -5,4 +5,15 @@
   <i alt="Loading..." class="fa-solid fa-spinner fa-spin htmx-indicator"></i>
 </section>
 
+<div hx-ext="ws" ws-connect="/v1/updates" hx-target="links-chart">
+  <canvas  hx-swap-oob="beforeend" id="links-chart"></canvas>
+</div>
+
+{{ end }}
+
+{{ define "appcode" }}
+<script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
+<script src="https://unpkg.com/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script src="/static/js/list-chart.js"></script>
+
 {{ end }}
