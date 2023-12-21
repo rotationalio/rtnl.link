@@ -1,7 +1,23 @@
-<h3>Link Created!</h3>
+<h3 class="text-[#192E5B] text-xl font-semibold mb-6">Link Created!</h3>
 <div>
   <ul>
-    <li><a href="{{ .URL }}" target="_blank">{{ .URL }}</a></li>
-    <li><a href="{{ .AltURL }}" target="_blank">{{ .AltURL }}</a></li>
+    <li class="mb-6">
+      <p class="mb-2 font-semibold">Rotational URL:</p>
+      <a href="{{ .URL }}" target="_blank" id="short-url" class="underline text-blue-600">{{ .URL }}</a>
+      <button onclick="copyUrlToClipboard()">
+        <i id="short-icon" class="fa-solid fa-copy ml-1"></i>
+      </button>
+      
+    </li>
+    <li>
+      <p class="mb-2 font-semibold">Alt URL:</p>
+      <a href="{{ .AltURL }}" target="_blank" id="alt-short-url" class="underline text-blue-600">{{ .AltURL }}</a>
+      <button onclick="copyAltUrlToClipboard()">
+        <i id="alt-short-icon" class="fa-solid fa-copy ml-1"></i>
+      </button>
+    </li>
   </ul>
+  
 </div>
+
+

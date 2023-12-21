@@ -2,12 +2,12 @@
 {{ define "content" }}
 
 <section class="text-center py-14">
-  <h2 class="text-2xl font-bold">Get Your Rotational URL</h2>
   <form method="post" hx-post="/v1/shorten">
+    <h2 class="mb-6 text-2xl text-[#192E5B] font-bold">Get Your Rotational URL</h2>
     <label for="url" class="hidden">Enter your original URL here</label>
-    <input type="text" name="url" name="url" placeholder="Enter original URL here" required class="mt-4 p-2 mx-auto block bg-gray-50 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
+    <input type="text" name="url" name="url" placeholder="Enter original URL here" required class="mt-4 p-2 mx-auto w-[275px] block bg-gray-50 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
     <div>
-      <button type="submit" class="bg-[#1D65A6FF] hover:bg-[#192E5B] text-white p-2 rounded mt-4">Shorten URL</button>
+      <button type="submit" class="bg-[#1D65A6FF] hover:bg-[#192E5B] w-[275px] text-white p-2 rounded mt-4">Shorten URL</button>
     </div>
   </form>
 
