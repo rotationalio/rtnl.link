@@ -32,8 +32,11 @@ type Click struct {
 }
 
 func Clicked(c *gin.Context) *Click {
+	link := c.Request.URL
+	link.Host = c.Request.Host
+
 	return &Click{
-		URL:       c.Request.URL.String(),
+		URL:       link.String(),
 		Time:      time.Now().Truncate(time.Hour).In(time.UTC).Format(time.RFC3339),
 		Views:     1,
 		UserAgent: c.GetHeader("User-Agent"),

@@ -1,6 +1,7 @@
 package stream
 
 import (
+	"errors"
 	"io"
 	"sync"
 
@@ -19,6 +20,7 @@ type Stream interface {
 	Click(*api.Click)
 	Shortened(*api.ShortURL)
 	Deleted(linkID string)
+	Subscribe() (*ensign.Subscription, error)
 }
 
 type AnalyticsStream struct {
@@ -84,6 +86,15 @@ func (s *AnalyticsStream) Deleted(linkID string) {
 			Expired: false,
 		}
 	}
+}
+
+func (s *AnalyticsStream) Subscribe() (*ensign.Subscription, error) {
+	s.RLock()
+	defer s.RUnlock()
+	if s.ensign != nil {
+		return s.ensign.Subscribe(s.conf.Topic)
+	}
+	return nil, errors.New("analytics stream is not connected")
 }
 
 func (s *AnalyticsStream) Close() error {

@@ -149,7 +149,7 @@ func (c *APIv1) ShortURLList(ctx context.Context, page *api.PageQuery) (out *api
 func (c *APIv1) Updates(ctx context.Context, id string) (_ <-chan *api.Click, err error) {
 	path := "/v1/updates"
 	if id != "" {
-		path = fmt.Sprintf("/v1/%s/updates", id)
+		path = fmt.Sprintf("/v1/links/%s/updates", id)
 	}
 
 	// Set the headers on the request
