@@ -61,8 +61,17 @@ func (s *Server) Updates(c *gin.Context) {
 	}
 	defer sub.Close()
 
+	// TODO: write some initial data to the websocket to display the graph.
+	if err = conn.WriteJSON(api.Clicked(c)); err != nil {
+		log.Error().Err(err).Msg("could not send message to establish connection")
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse(err))
+		return
+	}
+
 	// In the meantime, just write data back to the server
 	for event := range sub.C {
+		log.Debug().Msg("waiting for updates")
+
 		// Only publish click events to the updates stream
 		if event.Type.Name != "Click" {
 			continue
