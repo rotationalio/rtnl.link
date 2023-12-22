@@ -249,7 +249,7 @@ func (s *Server) Routes(router *gin.Engine) (err error) {
 		// Heartbeat route (no authentication required)
 		v1.GET("/status", s.Status)
 		v1.POST("/shorten", s.Authenticate, s.ShortenURL)
-		v1.GET("/updates", s.Authenticate, s.Updates)
+		v1.GET("/updates", s.Updates) // TODO: add back authentication
 		v1.GET("/links", s.Authenticate, s.ShortURLList)
 		v1.POST("/links", s.Authenticate, s.ShortenURL)
 		v1.GET("/links/:id", s.Authenticate, s.ShortURLInfo)
