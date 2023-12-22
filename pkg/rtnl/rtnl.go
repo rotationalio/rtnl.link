@@ -267,6 +267,10 @@ func (s *Server) Routes(router *gin.Engine) (err error) {
 	router.GET("/:id/info", s.ShortURLDetail)
 	router.DELETE("/:id", s.Authenticate, s.DeleteShortURL)
 
+	// Web Links
+	router.GET("/favicon.ico", func(c *gin.Context) { c.Redirect(http.StatusPermanentRedirect, "/static/favicon.ico") })
+	router.GET("/robots.txt", func(c *gin.Context) { c.Redirect(http.StatusPermanentRedirect, "/static/robots.txt") })
+
 	// NotFound and NotAllowed routes
 	router.NoRoute(s.NotFound)
 	router.NoMethod(s.NotAllowed)
