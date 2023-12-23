@@ -11,6 +11,9 @@ import (
 	"github.com/rotationalio/go-ensign"
 	"github.com/rotationalio/rtnl.link/pkg"
 	api "github.com/rotationalio/rtnl.link/pkg/api/v1"
+	"github.com/rotationalio/rtnl.link/pkg/passwd"
+	"github.com/rotationalio/rtnl.link/pkg/storage"
+	"github.com/rotationalio/rtnl.link/pkg/storage/models"
 	"github.com/rs/zerolog/log"
 )
 
@@ -31,6 +34,63 @@ func (s *Server) ShortURLDetail(c *gin.Context) {
 		"Version": pkg.Version(),
 	}
 	c.HTML(http.StatusOK, "info.html", data)
+}
+
+func (s *Server) LoginPage(c *gin.Context) {
+	data := api.NewWebData()
+	c.HTML(http.StatusOK, "login.html", data)
+}
+
+func (s *Server) Login(c *gin.Context) {
+	// TODO: switch to cookie-based authentication!
+	var (
+		err      error
+		in       *api.LoginForm
+		clientID string
+		secret   string
+		apikey   *models.APIKey
+		verified bool
+	)
+
+	in = &api.LoginForm{}
+	if err = c.Bind(in); err != nil {
+		log.Warn().Err(err).Msg("could not bind form input")
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse(err))
+		return
+	}
+
+	if in.APIKey == "" {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse("apikey is required"))
+		return
+	}
+
+	// Parse the token and validate it
+	if clientID, secret, err = ParseToken(in.APIKey); err != nil {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse("invalid api key"))
+		return
+	}
+
+	if apikey, err = s.db.Retrieve(clientID); err != nil {
+		if !errors.Is(err, storage.ErrNotFound) {
+			log.Error().Err(err).Msg("could not retrieve apikey from the database")
+		}
+
+		c.JSON(http.StatusBadRequest, api.ErrorResponse("invalid api key"))
+		return
+	}
+
+	if verified, err = passwd.VerifyDerivedKey(apikey.DerivedKey, secret); err != nil {
+		log.Error().Err(err).Msg("could not verify derived key")
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse(err))
+		return
+	}
+
+	if !verified {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse("invalid api key"))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "apikey": in.APIKey})
 }
 
 func (s *Server) Updates(c *gin.Context) {

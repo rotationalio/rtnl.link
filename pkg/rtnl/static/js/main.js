@@ -14,6 +14,14 @@ document.body.addEventListener('htmx:configRequest', function(e) {
   }
 });
 
+// Handle clicks to the logout button in the header
+document.getElementById("logout").addEventListener("click", function(e) {
+  e.preventDefault()
+  window.localStorage.removeItem(API_STORAGE_KEY)
+  window.location.href = "/login"
+  return false;
+});
+
 // Checks if there is an API key, and if not, redirects to the login page.
 (function() {
   let apikey = APIKey();

@@ -261,6 +261,8 @@ func (s *Server) Routes(router *gin.Engine) (err error) {
 	// TODO: add authentication
 	router.GET("/", s.Index)
 	router.GET("/links", s.List)
+	router.GET("/login", s.LoginPage)
+	router.POST("/login", s.Login)
 
 	// Permenant Routes
 	router.GET("/:id", s.Redirect)
