@@ -261,11 +261,17 @@ func (s *Server) Routes(router *gin.Engine) (err error) {
 	// TODO: add authentication
 	router.GET("/", s.Index)
 	router.GET("/links", s.List)
+	router.GET("/login", s.LoginPage)
+	router.POST("/login", s.Login)
 
 	// Permenant Routes
 	router.GET("/:id", s.Redirect)
 	router.GET("/:id/info", s.ShortURLDetail)
 	router.DELETE("/:id", s.Authenticate, s.DeleteShortURL)
+
+	// Web Links
+	router.GET("/favicon.ico", func(c *gin.Context) { c.Redirect(http.StatusPermanentRedirect, "/static/favicon.ico") })
+	router.GET("/robots.txt", func(c *gin.Context) { c.Redirect(http.StatusPermanentRedirect, "/static/robots.txt") })
 
 	// NotFound and NotAllowed routes
 	router.NoRoute(s.NotFound)

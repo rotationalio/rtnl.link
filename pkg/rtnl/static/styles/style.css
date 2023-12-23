@@ -2,8 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+html, body {
+    height: 100%;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    font-family: "Montserrat", sans-serif;
+}
+
+header {
+    background-color: #1D65A6FF;
+    padding: 24px 16px;
+}
+
+main {
+    flex: 1 0 auto;
+}
+
 footer {
+    flex-shrink: 0;
     color: #666;
+    background-color: #fefefe;
     font-size: 0.875rem;
     line-height: 1.25rem;
     border-top: 1px solid #ccc;
