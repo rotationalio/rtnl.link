@@ -173,9 +173,27 @@ func (s *Server) ShortURLList(c *gin.Context) {
 	}
 
 	// Retrieve the page from the database
+	// TODO: pass the page query to the listing function
+	var urls []*models.ShortURL
+	if urls, err = s.db.List(); err != nil {
+		log.Warn().Err(err).Msg("could not retrieve short url list from db")
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse("could not complete request"))
+		return
+	}
 
 	// Create the API response to send back to the user.
-	out = &api.ShortURLList{}
+	out = &api.ShortURLList{
+		URLs: make([]*api.ShortURL, 0, len(urls)),
+		Page: &api.PageQuery{},
+	}
+
+	for _, url := range urls {
+		out.URLs = append(out.URLs, &api.ShortURL{
+			URL:    base62.Encode(url.ID),
+			Title:  url.Title,
+			Visits: url.Visits,
+		})
+	}
 
 	c.Negotiate(http.StatusOK, gin.Negotiate{
 		Offered:  []string{gin.MIMEHTML, gin.MIMEJSON},

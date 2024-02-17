@@ -14,7 +14,7 @@ import (
 //
 // A Campaign is a relationship between shortened URLs that have different marketing
 // purposes. For example, we might shorten a webinar link then create campaign links
-// for sendgrid, twiter, linkedin, etc. The purpose of the campaign is to identify what
+// for sendgrid, twitter, linkedin, etc. The purpose of the campaign is to identify what
 // channels are performing best. In terms of the data structure, a short URL can either
 // have a campaign id -- meaning it is a campaign link for another URL or it can have
 // a list of campaigns, it's sublinks. Technically a tree-structure is possible, but in

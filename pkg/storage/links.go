@@ -40,6 +40,40 @@ func (s *Store) Save(obj *models.ShortURL) error {
 	return err
 }
 
+// TODO: support pagination when listing links.
+func (s *Store) List() ([]*models.ShortURL, error) {
+	urls := make([]*models.ShortURL, 0)
+
+	err := s.db.View(func(txn *badger.Txn) error {
+		it := txn.NewIterator(badger.DefaultIteratorOptions)
+		defer it.Close()
+
+		prefix := models.LinksBucket[:]
+		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+			item := it.Item()
+			obj := &models.ShortURL{}
+
+			err := item.Value(func(v []byte) error {
+				return obj.UnmarshalValue(v)
+			})
+
+			if err != nil {
+				return err
+			}
+
+			urls = append(urls, obj)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return urls, nil
+}
+
 func (s *Store) Load(key uint64) (string, error) {
 	obj := &models.ShortURL{ID: key}
 	keyb := obj.Key()
