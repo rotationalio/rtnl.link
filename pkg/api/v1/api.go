@@ -15,10 +15,15 @@ type Service interface {
 	Status(context.Context) (*StatusReply, error)
 
 	// URL Management
+	// TODO: edit short url with details
 	ShortURLList(context.Context, *PageQuery) (*ShortURLList, error)
 	ShortenURL(context.Context, *LongURL) (*ShortURL, error)
 	ShortURLInfo(context.Context, string) (*ShortURL, error)
 	DeleteShortURL(context.Context, string) error
+
+	// Campaigns
+
+	// Websockets
 	Updates(context.Context, string) (<-chan *Click, error)
 }
 
@@ -65,7 +70,7 @@ type ShortURL struct {
 	URL         string     `json:"url"`
 	AltURL      string     `json:"alt_url,omitempty"`
 	Title       string     `json:"title"`
-	Description string     `json:"description"`
+	Description string     `json:"description,omitempty"`
 	Visits      uint64     `json:"visits"`
 	Expires     *time.Time `json:"expires,omitempty"`
 	Created     *time.Time `json:"created,omitempty"`

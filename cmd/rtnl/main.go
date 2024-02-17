@@ -25,8 +25,9 @@ import (
 )
 
 var (
-	conf config.Config
-	svc  api.Service
+	conf  config.Config
+	svc   api.Service
+	store *badger.DB
 
 	timeout = 30 * time.Second
 )
@@ -102,6 +103,14 @@ func main() {
 			},
 		},
 		{
+			Name:     "list",
+			Category: "client",
+			Usage:    "get list of short urls stored on the server",
+			Action:   listLinks,
+			Before:   makeClient,
+			Flags:    []cli.Flag{},
+		},
+		{
 			Name:      "info",
 			Category:  "client",
 			Usage:     "get info about short url usage",
@@ -134,6 +143,15 @@ func main() {
 			Usage:    "check on th status of the shortener service",
 			Action:   status,
 			Before:   makeClient,
+			Flags:    []cli.Flag{},
+		},
+		{
+			Name:     "db:keys",
+			Category: "debug",
+			Usage:    "print out all of the keys in the local database",
+			Action:   dbKeys,
+			Before:   openStore,
+			After:    closeStore,
 			Flags:    []cli.Flag{},
 		},
 	}
@@ -312,6 +330,18 @@ func shorten(c *cli.Context) (err error) {
 	return display(out)
 }
 
+func listLinks(c *cli.Context) (err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	var out *api.ShortURLList
+	if out, err = svc.ShortURLList(ctx, nil); err != nil {
+		return cli.Exit(err, 1)
+	}
+
+	return display(out)
+}
+
 func info(c *cli.Context) (err error) {
 	if c.NArg() == 0 {
 		return cli.Exit("specify at least one short url ID to get info for", 1)
@@ -414,6 +444,30 @@ func status(c *cli.Context) (err error) {
 }
 
 //===========================================================================
+// Debug Commands
+//===========================================================================
+
+func dbKeys(c *cli.Context) error {
+	err := store.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchValues = false
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			k := item.Key()
+			fmt.Printf("key=%s\n", k)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return cli.Exit(err, 1)
+	}
+	return nil
+}
+
+//===========================================================================
 // Helper Commands
 //===========================================================================
 
@@ -426,6 +480,29 @@ func configure(c *cli.Context) (err error) {
 
 func makeClient(c *cli.Context) (err error) {
 	if svc, err = client.New(c.String("endpoint"), c.String("api-key")); err != nil {
+		return cli.Exit(err, 1)
+	}
+	return nil
+}
+
+func openStore(c *cli.Context) (err error) {
+	if err = configure(c); err != nil {
+		return err
+	}
+
+	opts := badger.DefaultOptions(conf.Storage.DataPath)
+	opts.ReadOnly = conf.Storage.ReadOnly
+	opts.Logger = nil
+
+	if store, err = badger.Open(opts); err != nil {
+		return cli.Exit(err, 1)
+	}
+
+	return nil
+}
+
+func closeStore(c *cli.Context) (err error) {
+	if err = store.Close(); err != nil {
 		return cli.Exit(err, 1)
 	}
 	return nil

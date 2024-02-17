@@ -266,7 +266,7 @@ func (s *Server) Routes(router *gin.Engine) (err error) {
 
 	// Permenant Routes
 	router.GET("/:id", s.Redirect)
-	router.GET("/:id/info", s.ShortURLDetail)
+	router.GET("/:id/info", s.Authenticate, s.ShortURLDetail)
 	router.DELETE("/:id", s.Authenticate, s.DeleteShortURL)
 
 	// Web Links

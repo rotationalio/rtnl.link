@@ -17,6 +17,7 @@ type Storage interface {
 
 type LinkStorage interface {
 	Save(*models.ShortURL) error
+	List() ([]*models.ShortURL, error)
 	Load(uint64) (string, error)
 	LoadInfo(uint64) (*models.ShortURL, error)
 	Delete(uint64) error
