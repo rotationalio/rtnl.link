@@ -51,9 +51,10 @@ type PageQuery struct {
 	NextPageToken string `json:"next_page_token" url:"next_page_token,omitempty" form:"next_page_token"`
 }
 
-// LoginForm to check if an API key is valid.
+// LoginForm is used for Google to submit an id token back to the server.
 type LoginForm struct {
-	APIKey string `json:"apikey" url:"apikey" form:"apikey"`
+	Credential string `json:"credential" url:"credential" form:"credential"`
+	Next       string `json:"next" url:"next" form:"next"`
 }
 
 //===========================================================================

@@ -21,19 +21,21 @@ const prefix = "rtnl"
 // values that are omitted. The Config should be validated in preparation for running
 // the server to ensure that all server operations work as expected.
 type Config struct {
-	Maintenance  bool                `default:"false" yaml:"maintenance"`
-	Mode         string              `default:"release"`
-	LogLevel     logger.LevelDecoder `split_words:"true" default:"info" yaml:"log_level"`
-	ConsoleLog   bool                `split_words:"true" default:"false" yaml:"console_log"`
-	BindAddr     string              `split_words:"true" default:":8765" yaml:"bind_addr"`
-	AllowOrigins []string            `split_words:"true" default:"http://localhost:8765"`
-	Origin       string              `default:"https://rtnl.link"`
-	AltOrigin    string              `split_words:"true" default:"https://r8l.co"`
-	Storage      StorageConfig
-	Ensign       EnsignConfig
-	processed    bool
-	originURL    *url.URL
-	altURL       *url.URL
+	Maintenance    bool                `default:"false" yaml:"maintenance"`
+	Mode           string              `default:"release"`
+	LogLevel       logger.LevelDecoder `split_words:"true" default:"info" yaml:"log_level"`
+	ConsoleLog     bool                `split_words:"true" default:"false" yaml:"console_log"`
+	BindAddr       string              `split_words:"true" default:":8765" yaml:"bind_addr"`
+	AllowOrigins   []string            `split_words:"true" default:"http://localhost:8765"`
+	Origin         string              `default:"https://rtnl.link"`
+	AltOrigin      string              `split_words:"true" default:"https://r8l.co"`
+	GoogleClientID string              `split_words:"true" required:"true"`
+	AllowedDomain  string              `split_words:"true" default:"rotational.io"`
+	Storage        StorageConfig
+	Ensign         EnsignConfig
+	processed      bool
+	originURL      *url.URL
+	altURL         *url.URL
 }
 
 type StorageConfig struct {

@@ -19,6 +19,8 @@ var testEnv = map[string]string{
 	"RTNL_ALLOW_ORIGINS":        "http://localhost:8888",
 	"RTNL_ORIGIN":               "http://localhost:8888",
 	"RTNL_ALT_ORIGIN":           "http://127.0.0.1:8888",
+	"RTNL_GOOGLE_CLIENT_ID":     "1234-testing.apps.googleusercontent.com",
+	"RTNL_ALLOWED_DOMAIN":       "example.com",
 	"RTNL_STORAGE_READ_ONLY":    "true",
 	"RTNL_STORAGE_DATA_PATH":    "/data/db",
 	"RTNL_ENSIGN_PATH":          "/credentials/ensign.json",
@@ -45,6 +47,8 @@ func TestConfig(t *testing.T) {
 	require.Equal(t, []string{testEnv["RTNL_ALLOW_ORIGINS"]}, conf.AllowOrigins)
 	require.Equal(t, testEnv["RTNL_ORIGIN"], conf.Origin)
 	require.Equal(t, testEnv["RTNL_ALT_ORIGIN"], conf.AltOrigin)
+	require.Equal(t, testEnv["RTNL_GOOGLE_CLIENT_ID"], conf.GoogleClientID)
+	require.Equal(t, testEnv["RTNL_ALLOWED_DOMAIN"], conf.AllowedDomain)
 	require.True(t, conf.Storage.ReadOnly)
 	require.Equal(t, testEnv["RTNL_STORAGE_DATA_PATH"], conf.Storage.DataPath)
 	require.True(t, conf.Ensign.Maintenance)

@@ -1,17 +1,52 @@
 package api
 
 import (
+	"net/url"
+	"sync"
+
 	"github.com/rotationalio/rtnl.link/pkg"
+	"github.com/rotationalio/rtnl.link/pkg/config"
 )
+
+var (
+	prepare   sync.Once
+	webData   WebData
+	loginData LoginData
+)
+
+func Prepare(conf config.Config) {
+	prepare.Do(func() {
+		loginURI, _ := url.Parse(conf.Origin)
+		loginURI.Path = "/login"
+
+		webData = WebData{
+			Version: pkg.Version(),
+		}
+
+		loginData = LoginData{
+			WebData:        webData,
+			GoogleClientID: conf.GoogleClientID,
+			LoginURI:       loginURI.String(),
+		}
+	})
+}
 
 type WebData struct {
 	Version string
 }
 
-func NewWebData() WebData {
-	return WebData{
-		Version: pkg.Version(),
-	}
+func GetWebData() WebData {
+	return webData
+}
+
+type LoginData struct {
+	WebData
+	GoogleClientID string
+	LoginURI       string
+}
+
+func GetLoginData() LoginData {
+	return loginData
 }
 
 type InfoDetail struct {
@@ -21,7 +56,7 @@ type InfoDetail struct {
 
 func (s *ShortURL) WebData() InfoDetail {
 	return InfoDetail{
-		WebData: NewWebData(),
+		WebData: GetWebData(),
 		Info:    s,
 	}
 }
@@ -34,7 +69,7 @@ type LinkList struct {
 
 func (s *ShortURLList) WebData() LinkList {
 	return LinkList{
-		WebData: NewWebData(),
+		WebData: GetWebData(),
 		URLs:    s.URLs,
 		Page:    s.Page,
 	}

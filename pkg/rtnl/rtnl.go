@@ -17,6 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/rotationalio/rtnl.link/pkg"
+	"github.com/rotationalio/rtnl.link/pkg/api/v1"
 	"github.com/rotationalio/rtnl.link/pkg/config"
 	"github.com/rotationalio/rtnl.link/pkg/logger"
 	"github.com/rotationalio/rtnl.link/pkg/storage"
@@ -67,6 +68,9 @@ func New(conf config.Config) (s *Server, err error) {
 	if conf.ConsoleLog {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
+
+	// Prepare the API to generate correct web context data
+	api.Prepare(conf)
 
 	// Create and configure the gin router
 	gin.SetMode(conf.Mode)
