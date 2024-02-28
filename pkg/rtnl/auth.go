@@ -15,7 +15,9 @@ import (
 )
 
 const (
-	authorization = "Authorization"
+	authorization      = "Authorization"
+	accessTokenCookie  = "access_token"
+	refreshTokenCookie = "refresh_token"
 )
 
 // used to extract the access token from the header

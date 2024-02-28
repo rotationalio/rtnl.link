@@ -18,6 +18,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/rotationalio/rtnl.link/pkg"
 	"github.com/rotationalio/rtnl.link/pkg/api/v1"
+	"github.com/rotationalio/rtnl.link/pkg/auth"
 	"github.com/rotationalio/rtnl.link/pkg/config"
 	"github.com/rotationalio/rtnl.link/pkg/logger"
 	"github.com/rotationalio/rtnl.link/pkg/storage"
@@ -46,6 +47,7 @@ type Server struct {
 	srv       *http.Server       // The HTTP server configuration for handling requests
 	router    *gin.Engine        // The gin router for mapping endpoints to handlers
 	db        storage.Storage    // Database storage for URLs and API keys
+	auth      *auth.TokenManager // Web authentication and JWT handler
 	upgrader  websocket.Upgrader // Upgrades http connections to open a websocket stream
 	analytics stream.Stream      // Ensign client to publish and subscribe to rtnl updates
 	healthy   bool               // Indicates that the service is online and healthy
@@ -104,6 +106,11 @@ func New(conf config.Config) (s *Server, err error) {
 		router:   router,
 		upgrader: upgrader,
 		echan:    make(chan error, 1),
+	}
+
+	// Create the authentication token manager
+	if s.auth, err = auth.New(conf.Auth); err != nil {
+		return nil, err
 	}
 
 	return s, nil

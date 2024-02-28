@@ -11,6 +11,7 @@ import (
 	"github.com/rotationalio/go-ensign"
 	"github.com/rotationalio/rtnl.link/pkg"
 	api "github.com/rotationalio/rtnl.link/pkg/api/v1"
+	"github.com/rotationalio/rtnl.link/pkg/auth"
 	"github.com/rs/zerolog/log"
 )
 
@@ -62,15 +63,39 @@ func (s *Server) Login(c *gin.Context) {
 	}
 
 	// Parse the JWT id token from Google and validate it
-	if err = s.ValidateGoogleJWT(in.Credential); err != nil {
+	var claims *auth.Claims
+	if claims, err = s.auth.CheckGoogleIDToken(c.Request.Context(), in.Credential); err != nil {
 		c.JSON(http.StatusUnauthorized, api.ErrorResponse(err))
 		return
 	}
 
+	// Create access and refresh tokens from the claims
+	var atks, rtks string
+	if atks, rtks, err = s.auth.CreateTokenPair(claims); err != nil {
+		log.Warn().Err(err).Msg("could not create access and refresh token pair from claims")
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse("could not create user credentials"))
+		return
+	}
+
+	// Figure out the max age for access and refresh tokens from the refresh token
+	var expiration time.Time
+	if expiration, err = auth.ExpiresAt(rtks); err != nil {
+		log.Warn().Err(err).Msg("could not parse expiration of refresh token")
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse("could not create user credentials"))
+		return
+	}
+
+	// Compute the max age of the cookies based on the refresh token expiration.
+	maxAge := int(time.Until(expiration).Seconds())
+
+	// If the cookie domain is localhost, then set secure to false for development
+	secure := s.conf.Auth.CookieDomain != "localhost"
+
 	// Store the access token as a cookie on the outgoing response then redirect the
 	// user back to the home page or to the next page if it has been provided.
-
-	c.JSON(http.StatusOK, gin.H{"success": true, "credential": in.Credential})
+	c.SetCookie(accessTokenCookie, atks, maxAge, "/", s.conf.Auth.CookieDomain, secure, true)
+	c.SetCookie(refreshTokenCookie, rtks, maxAge, "/", s.conf.Auth.CookieDomain, secure, true)
+	c.Redirect(http.StatusFound, "/")
 }
 
 // Updates serves a web socket connection to stream live updates back to the client.

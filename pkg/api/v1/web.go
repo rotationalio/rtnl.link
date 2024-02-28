@@ -25,7 +25,7 @@ func Prepare(conf config.Config) {
 
 		loginData = LoginData{
 			WebData:        webData,
-			GoogleClientID: conf.GoogleClientID,
+			GoogleClientID: conf.Auth.GoogleClientID,
 			LoginURI:       loginURI.String(),
 		}
 	})

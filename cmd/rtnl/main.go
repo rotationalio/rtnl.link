@@ -8,10 +8,12 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/joho/godotenv"
+	confire "github.com/rotationalio/confire/usage"
 	"github.com/rotationalio/rtnl.link/pkg"
 	"github.com/rotationalio/rtnl.link/pkg/api/v1"
 	"github.com/rotationalio/rtnl.link/pkg/client"
@@ -64,6 +66,19 @@ func main() {
 			Action:   serve,
 			Before:   configure,
 			Flags:    []cli.Flag{},
+		},
+		{
+			Name:     "config",
+			Category: "server",
+			Usage:    "view the configuration documentation",
+			Action:   usage,
+			Flags: []cli.Flag{
+				&cli.BoolFlag{
+					Name:    "list",
+					Aliases: []string{"l"},
+					Usage:   "print in list mode instead of table mode",
+				},
+			},
 		},
 		{
 			Name:     "register",
@@ -174,6 +189,21 @@ func serve(c *cli.Context) (err error) {
 	if err = srv.Serve(); err != nil {
 		return cli.Exit(err, 1)
 	}
+	return nil
+}
+
+func usage(c *cli.Context) (err error) {
+	tabs := tabwriter.NewWriter(os.Stdout, 1, 0, 4, ' ', 0)
+	format := confire.DefaultTableFormat
+	if c.Bool("list") {
+		format = confire.DefaultListFormat
+	}
+
+	var conf config.Config
+	if err := confire.Usagef(config.Prefix, &conf, tabs, format); err != nil {
+		return cli.Exit(err, 1)
+	}
+	tabs.Flush()
 	return nil
 }
 
