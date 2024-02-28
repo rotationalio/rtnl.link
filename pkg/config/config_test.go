@@ -3,6 +3,7 @@ package config_test
 import (
 	"os"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rotationalio/rtnl.link/pkg/config"
@@ -11,20 +12,29 @@ import (
 )
 
 var testEnv = map[string]string{
-	"RTNL_MAINTENANCE":          "true",
-	"RTNL_MODE":                 "test",
-	"RTNL_LOG_LEVEL":            "debug",
-	"RTNL_CONSOLE_LOG":          "true",
-	"RTNL_BIND_ADDR":            ":8888",
-	"RTNL_ALLOW_ORIGINS":        "http://localhost:8888",
-	"RTNL_ORIGIN":               "http://localhost:8888",
-	"RTNL_ALT_ORIGIN":           "http://127.0.0.1:8888",
-	"RTNL_STORAGE_READ_ONLY":    "true",
-	"RTNL_STORAGE_DATA_PATH":    "/data/db",
-	"RTNL_ENSIGN_PATH":          "/credentials/ensign.json",
-	"RTNL_ENSIGN_CLIENT_ID":     "ensignclientid",
-	"RTNL_ENSIGN_CLIENT_SECRET": "ensignclientsecret",
-	"RTNL_ENSIGN_TOPIC":         "shortcrust-testing",
+	"RTNL_MAINTENANCE":           "true",
+	"RTNL_MODE":                  "test",
+	"RTNL_LOG_LEVEL":             "debug",
+	"RTNL_CONSOLE_LOG":           "true",
+	"RTNL_BIND_ADDR":             ":8888",
+	"RTNL_ALLOW_ORIGINS":         "http://localhost:8888",
+	"RTNL_ORIGIN":                "http://localhost:8888",
+	"RTNL_ALT_ORIGIN":            "http://127.0.0.1:8888",
+	"RTNL_STORAGE_READ_ONLY":     "true",
+	"RTNL_STORAGE_DATA_PATH":     "/data/db",
+	"RTNL_AUTH_GOOGLE_CLIENT_ID": "1234-testing.apps.googleusercontent.com",
+	"RTNL_AUTH_HD_CLAIM":         "example.com",
+	"RTNL_AUTH_COOKIE_DOMAIN":    "localhost",
+	"RTNL_AUTH_KEYS":             "123:/path/to/key.pem",
+	"RTNL_AUTH_AUDIENCE":         "http://localhost:8888",
+	"RTNL_AUTH_ISSUER":           "http://localhost:8888",
+	"RTNL_AUTH_ACCESS_DURATION":  "5m",
+	"RTNL_AUTH_REFRESH_DURATION": "15m",
+	"RTNL_AUTH_REFRESH_OVERLAP":  "-5m",
+	"RTNL_ENSIGN_PATH":           "/credentials/ensign.json",
+	"RTNL_ENSIGN_CLIENT_ID":      "ensignclientid",
+	"RTNL_ENSIGN_CLIENT_SECRET":  "ensignclientsecret",
+	"RTNL_ENSIGN_TOPIC":          "shortcrust-testing",
 }
 
 func TestConfig(t *testing.T) {
@@ -47,6 +57,14 @@ func TestConfig(t *testing.T) {
 	require.Equal(t, testEnv["RTNL_ALT_ORIGIN"], conf.AltOrigin)
 	require.True(t, conf.Storage.ReadOnly)
 	require.Equal(t, testEnv["RTNL_STORAGE_DATA_PATH"], conf.Storage.DataPath)
+	require.Equal(t, testEnv["RTNL_AUTH_GOOGLE_CLIENT_ID"], conf.Auth.GoogleClientID)
+	require.Equal(t, testEnv["RTNL_AUTH_HD_CLAIM"], conf.Auth.HDClaim)
+	require.Equal(t, testEnv["RTNL_AUTH_COOKIE_DOMAIN"], conf.Auth.CookieDomain)
+	require.Equal(t, testEnv["RTNL_AUTH_AUDIENCE"], conf.Auth.Audience)
+	require.Equal(t, testEnv["RTNL_AUTH_ISSUER"], conf.Auth.Issuer)
+	require.Equal(t, 5*time.Minute, conf.Auth.AccessDuration)
+	require.Equal(t, 15*time.Minute, conf.Auth.RefreshDuration)
+	require.Equal(t, -5*time.Minute, conf.Auth.RefreshOverlap)
 	require.True(t, conf.Ensign.Maintenance)
 	require.Equal(t, testEnv["RTNL_ENSIGN_PATH"], conf.Ensign.Path)
 	require.Equal(t, testEnv["RTNL_ENSIGN_CLIENT_ID"], conf.Ensign.ClientID)

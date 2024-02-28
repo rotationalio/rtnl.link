@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rotationalio/confire"
@@ -11,10 +12,10 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// All environment variables will have this prefix unless otherwise defined in struct
+// All environment variables will have this Prefix unless otherwise defined in struct
 // tags. For example, the conf.LogLevel environment variable will be RTNL_LOG_LEVEL
-// because of this prefix and the split_words struct tag in the conf below.
-const prefix = "rtnl"
+// because of this Prefix and the split_words struct tag in the conf below.
+const Prefix = "rtnl"
 
 // Config contains all of the configuration parameters for an rtnl server and is
 // loaded from the environment or a configuration file with reasonable defaults for
@@ -30,6 +31,7 @@ type Config struct {
 	Origin       string              `default:"https://rtnl.link"`
 	AltOrigin    string              `split_words:"true" default:"https://r8l.co"`
 	Storage      StorageConfig
+	Auth         AuthConfig
 	Ensign       EnsignConfig
 	processed    bool
 	originURL    *url.URL
@@ -39,6 +41,18 @@ type Config struct {
 type StorageConfig struct {
 	ReadOnly bool   `split_words:"true" default:"false"`
 	DataPath string `split_words:"true" required:"true"`
+}
+
+type AuthConfig struct {
+	GoogleClientID  string            `split_words:"true" required:"true" desc:"the Google oauth claims client id and audience"`
+	HDClaim         string            `split_words:"true" default:"rotational.io" desc:"the email domain to allow to authenticate"`
+	CookieDomain    string            `split_words:"true" default:"rtnl.link" desc:"the domain to assign cookies to"`
+	Keys            map[string]string `required:"false" desc:"rsa keys for signing access tokens (generated if omitted)"`
+	Audience        string            `default:"https://rtnl.link" desc:"audience to add to rtnl jwt claims"`
+	Issuer          string            `default:"https://rtnl.link" desc:"issuer to add to rtnl jwt claims"`
+	AccessDuration  time.Duration     `split_words:"true" default:"1h" desc:"amount of time access tokens are valid"`
+	RefreshDuration time.Duration     `split_words:"true" default:"2h" desc:"amount of time refresh tokens are valid"`
+	RefreshOverlap  time.Duration     `split_words:"true" default:"-15m" desc:"validity period of refresh token while access token is"`
 }
 
 type EnsignConfig struct {
@@ -52,7 +66,7 @@ type EnsignConfig struct {
 // New creates and processes a Config from the environment ready for use. If the
 // configuration is invalid or it cannot be processed an error is returned.
 func New() (conf Config, err error) {
-	if err = confire.Process(prefix, &conf); err != nil {
+	if err = confire.Process(Prefix, &conf); err != nil {
 		return conf, err
 	}
 

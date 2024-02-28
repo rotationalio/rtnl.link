@@ -13,22 +13,39 @@
 </head>
 <body>
   <main class="flex h-100 justify-center content-center">
-    <div class="my-auto text-center p-4">
-      <h3 class="text-2xl text-space-cadet font-bold">Please Sign In</h3>
-      <form hx-post="/login" class="flex-row">
-        <label for="apikey" class="hidden">Ener your APIKey here</label>
-        <input type="text" id="apikey" name="apikey" placeholder="Enter your API Key" required
-              class="inline-block mt-3 p-2 mx-auto w-[400px] md:w-[675px] lg:w-[780px] bg-gray-50 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
-        <button type="submit" class="inline-block w-[32px] bg-lapis hover:bg-space-cadet text-white p-2 rounded mt-4"><i class="fa fa-key"></i></button>
-      </form>
-      <p id="login-help" class="text-sm text-slate-400 pt-2">If you need an API key, please request one from the web admin.</p>
-      <p id="login-error" class="text-sm text-red-400 pt-1 hidden"></p>
+    <div class="w-96 border border-solid border-space-cadet rounded-lg my-auto">
+      <div class="content-center bg-lapis py-6 rounded-t-lg">
+        <img class="mx-auto" width="64" height="64" src="/static/images/rotational-white-logo.png" title="Rotational Shortcrust Login" />
+      </div>
+
+      <div class="text-center p-5">
+        <h3 class="text-2xl pb-4 text-space-cadet font-bold">Please Sign In</h3>
+        <p class="pb-4 text-sm text-slate-700" >Please sign in with your <span class="text-lapis">@rotational.io</span> email address to access the Rotational Shortcrust UI.</p>
+        <div class="max-w-52 my-4 mx-auto">
+          <div id="g_id_onload"
+            data-client_id="{{ .GoogleClientID }}"
+            data-context="signin"
+            data-ux_mode="popup"
+            data-login_uri="{{ .LoginURI }}">
+          </div>
+
+          <div class="g_id_signin mx-auto"
+            data-type="standard"
+            data-shape="rectangular"
+            data-theme="outline"
+            data-text="sign_in_with"
+            data-size="large"
+            data-logo_alignment="left">
+          </div>
+        </div>
+      </div>
     </div>
   </main>
 
   {{ template "footer" .}}
 
   <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+  <script src="https://accounts.google.com/gsi/client" async></script>
   <script src="/static/js/login.js"></script>
 </body>
 </html>

@@ -11,22 +11,22 @@ import (
 	"github.com/rotationalio/go-ensign"
 	"github.com/rotationalio/rtnl.link/pkg"
 	api "github.com/rotationalio/rtnl.link/pkg/api/v1"
-	"github.com/rotationalio/rtnl.link/pkg/passwd"
-	"github.com/rotationalio/rtnl.link/pkg/storage"
-	"github.com/rotationalio/rtnl.link/pkg/storage/models"
+	"github.com/rotationalio/rtnl.link/pkg/auth"
 	"github.com/rs/zerolog/log"
 )
 
+// Index returns the home page and landing dashboard.
 func (s *Server) Index(c *gin.Context) {
-	data := api.NewWebData()
+	data := api.GetWebData()
 	c.HTML(http.StatusOK, "index.html", data)
 }
 
 func (s *Server) List(c *gin.Context) {
-	data := api.NewWebData()
+	data := api.GetWebData()
 	c.HTML(http.StatusOK, "list.html", data)
 }
 
+// ShortURL detail returns the detail page for a short URL including analytics info.
 func (s *Server) ShortURLDetail(c *gin.Context) {
 	// Get URL parameter from input
 	data := gin.H{
@@ -36,20 +36,18 @@ func (s *Server) ShortURLDetail(c *gin.Context) {
 	c.HTML(http.StatusOK, "info.html", data)
 }
 
+// Login page returns the web-based login for a Google sign-in button.
 func (s *Server) LoginPage(c *gin.Context) {
-	data := api.NewWebData()
+	data := api.GetLoginData()
 	c.HTML(http.StatusOK, "login.html", data)
 }
 
+// Login handles the POST request from Google when a user successfully logs in.
 func (s *Server) Login(c *gin.Context) {
 	// TODO: switch to cookie-based authentication!
 	var (
-		err      error
-		in       *api.LoginForm
-		clientID string
-		secret   string
-		apikey   *models.APIKey
-		verified bool
+		err error
+		in  *api.LoginForm
 	)
 
 	in = &api.LoginForm{}
@@ -59,40 +57,44 @@ func (s *Server) Login(c *gin.Context) {
 		return
 	}
 
-	if in.APIKey == "" {
-		c.JSON(http.StatusBadRequest, api.ErrorResponse("apikey is required"))
+	if in.Credential == "" {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse("jwt credential is required"))
 		return
 	}
 
-	// Parse the token and validate it
-	if clientID, secret, err = ParseToken(in.APIKey); err != nil {
-		c.JSON(http.StatusBadRequest, api.ErrorResponse("invalid api key"))
+	// Parse the JWT id token from Google and validate it
+	var claims *auth.Claims
+	if claims, err = s.auth.CheckGoogleIDToken(c.Request.Context(), in.Credential); err != nil {
+		c.JSON(http.StatusUnauthorized, api.ErrorResponse(err))
 		return
 	}
 
-	if apikey, err = s.db.Retrieve(clientID); err != nil {
-		if !errors.Is(err, storage.ErrNotFound) {
-			log.Error().Err(err).Msg("could not retrieve apikey from the database")
-		}
-
-		c.JSON(http.StatusBadRequest, api.ErrorResponse("invalid api key"))
+	// Create access and refresh tokens from the claims
+	var atks, rtks string
+	if atks, rtks, err = s.auth.CreateTokenPair(claims); err != nil {
+		log.Warn().Err(err).Msg("could not create access and refresh token pair from claims")
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse("could not create user credentials"))
 		return
 	}
 
-	if verified, err = passwd.VerifyDerivedKey(apikey.DerivedKey, secret); err != nil {
-		log.Error().Err(err).Msg("could not verify derived key")
-		c.JSON(http.StatusInternalServerError, api.ErrorResponse(err))
+	// Store the access token as a cookie on the outgoing response
+	if err = s.SetAuthCookies(c, atks, rtks); err != nil {
+		log.Warn().Err(err).Msg("could not parse expiration of refresh token")
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse("could not create user credentials"))
 		return
 	}
 
-	if !verified {
-		c.JSON(http.StatusBadRequest, api.ErrorResponse("invalid api key"))
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"success": true, "apikey": in.APIKey})
+	// Redirect the user back to the home page
+	c.Redirect(http.StatusFound, "/")
 }
 
+func (s *Server) Logout(c *gin.Context) {
+	// Remove authentication cookies and redirect to the login page
+	s.ClearAuthCookies(c)
+	c.Redirect(http.StatusFound, "/login")
+}
+
+// Updates serves a web socket connection to stream live updates back to the client.
 func (s *Server) Updates(c *gin.Context) {
 	var (
 		err    error
