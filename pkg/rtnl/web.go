@@ -77,25 +77,21 @@ func (s *Server) Login(c *gin.Context) {
 		return
 	}
 
-	// Figure out the max age for access and refresh tokens from the refresh token
-	var expiration time.Time
-	if expiration, err = auth.ExpiresAt(rtks); err != nil {
+	// Store the access token as a cookie on the outgoing response
+	if err = s.SetAuthCookies(c, atks, rtks); err != nil {
 		log.Warn().Err(err).Msg("could not parse expiration of refresh token")
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse("could not create user credentials"))
 		return
 	}
 
-	// Compute the max age of the cookies based on the refresh token expiration.
-	maxAge := int(time.Until(expiration).Seconds())
-
-	// If the cookie domain is localhost, then set secure to false for development
-	secure := s.conf.Auth.CookieDomain != "localhost"
-
-	// Store the access token as a cookie on the outgoing response then redirect the
-	// user back to the home page or to the next page if it has been provided.
-	c.SetCookie(accessTokenCookie, atks, maxAge, "/", s.conf.Auth.CookieDomain, secure, true)
-	c.SetCookie(refreshTokenCookie, rtks, maxAge, "/", s.conf.Auth.CookieDomain, secure, true)
+	// Redirect the user back to the home page
 	c.Redirect(http.StatusFound, "/")
+}
+
+func (s *Server) Logout(c *gin.Context) {
+	// Remove authentication cookies and redirect to the login page
+	s.ClearAuthCookies(c)
+	c.Redirect(http.StatusFound, "/login")
 }
 
 // Updates serves a web socket connection to stream live updates back to the client.

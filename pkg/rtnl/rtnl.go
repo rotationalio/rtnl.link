@@ -269,11 +269,11 @@ func (s *Server) Routes(router *gin.Engine) (err error) {
 	}
 
 	// Web Routes
-	// TODO: add authentication
-	router.GET("/", s.Index)
-	router.GET("/links", s.List)
+	router.GET("/", s.WebAuthenticate, s.Index)
+	router.GET("/links", s.WebAuthenticate, s.List)
 	router.GET("/login", s.LoginPage)
 	router.POST("/login", s.Login)
+	router.GET("/logout", s.Logout)
 
 	// Permenant Routes
 	router.GET("/:id", s.Redirect)
