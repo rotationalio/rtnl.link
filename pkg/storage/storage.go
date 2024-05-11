@@ -13,6 +13,7 @@ type Storage interface {
 	io.Closer
 	LinkStorage
 	APIKeyStorage
+	StorageInfo
 }
 
 type LinkStorage interface {
@@ -26,6 +27,10 @@ type LinkStorage interface {
 type APIKeyStorage interface {
 	Register(*models.APIKey) error
 	Retrieve(string) (*models.APIKey, error)
+}
+
+type StorageInfo interface {
+	Counts() (*models.Counts, error)
 }
 
 func Open(conf config.StorageConfig) (_ Storage, err error) {

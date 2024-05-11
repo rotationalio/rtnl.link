@@ -25,7 +25,10 @@ func (tm *TokenManager) CheckGoogleIDToken(ctx context.Context, credential strin
 		Name:    payload.Claims["name"].(string),
 		Email:   payload.Claims["email"].(string),
 		Picture: payload.Claims["picture"].(string),
-		Locale:  payload.Claims["locale"].(string),
+	}
+
+	if payload.Claims["locale"] != nil {
+		claims.Locale = payload.Claims["locale"].(string)
 	}
 
 	return claims, nil
