@@ -74,3 +74,15 @@ func (s *ShortURLList) WebData() LinkList {
 		Page:    s.Page,
 	}
 }
+
+type Stats struct {
+	WebData
+	Info *ShortcrustInfo
+}
+
+func (s *ShortcrustInfo) WebData() Stats {
+	return Stats{
+		WebData: GetWebData(),
+		Info:    s,
+	}
+}

@@ -259,6 +259,7 @@ func (s *Server) Routes(router *gin.Engine) (err error) {
 	{
 		// Heartbeat route (no authentication required)
 		v1.GET("/status", s.Status)
+		v1.GET("/stats", s.Authenticate, s.ShortcrustStats)
 		v1.POST("/shorten", s.Authenticate, s.ShortenURL)
 		v1.GET("/updates", s.Updates) // TODO: add back authentication
 		v1.GET("/links", s.Authenticate, s.ShortURLList)
@@ -277,8 +278,8 @@ func (s *Server) Routes(router *gin.Engine) (err error) {
 
 	// Permenant Routes
 	router.GET("/:id", s.Redirect)
-	router.GET("/:id/info", s.Authenticate, s.ShortURLDetail)
-	router.DELETE("/:id", s.Authenticate, s.DeleteShortURL)
+	router.GET("/:id/info", s.WebAuthenticate, s.ShortURLDetail)
+	router.DELETE("/:id", s.WebAuthenticate, s.DeleteShortURL)
 
 	// Web Links
 	router.GET("/favicon.ico", func(c *gin.Context) { c.Redirect(http.StatusPermanentRedirect, "/static/favicon.ico") })

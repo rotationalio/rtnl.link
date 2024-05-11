@@ -1,16 +1,29 @@
 {{ template "base" . }}
 {{ define "content" }}
 
-<section id="create-url-form" class="text-center py-14">
-  <form method="post" hx-post="/v1/shorten" hx-target="#create-url-form">
-    <h2 class="mb-6 text-2xl text-space-cadet font-bold">Get Your Rotational URL</h2>
-    <label for="url" class="hidden">Enter your original URL here</label>
-    <input type="text" id="url" name="url" placeholder="Enter original URL here" required class="mt-4 p-2 mx-auto w-[275px] block bg-gray-50 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" />
-    <div>
-      <button type="submit" class="bg-lapis hover:bg-space-cadet w-[275px] text-white p-2 rounded mt-4">Shorten URL</button>
-    </div>
-  </form>
-</section>
+<div class="m-auto flex justify-between lg:w-[1024px]" hx-get="/v1/stats" hx-trigger="load">
+  <i alt="Loading..." class="fa-solid fa-spinner fa-spin htmx-indicator"></i>
+</div>
+
+<div class="m-auto flex justify-center lg:w-[1024px]">
+  <section id="create-url-form" class="text-center py-14">
+    <h2 class="mb-2 text-xl text-space-cadet font-bold">Create or Retrieve Rotational Short Link</h2>
+    <form method="post" hx-post="/v1/shorten" hx-target="#create-url-form" class="flex flex-col w-[417px]">
+      <label class="form-control w-full">
+        <div class="label">
+          <span class="label-text">Destination</span>
+        </div>
+        <input type="text" id="url" name="url" placeholder="https://example.com/my-long-url" required class="input input-bordered w-full focus:ring-blue-500 focus:border-blue-500" />
+        <div class="label">
+          <span class="label-text-alt">If the link doesn't already exists, it will be created.</span>
+        </div>
+      </label>
+      <div class="mt-2">
+        <button type="submit" class="bg-lapis hover:bg-space-cadet text-white p-2 rounded">Shorten URL</button>
+      </div>
+    </form>
+  </section>
+</div>
 
 {{ end }}
 

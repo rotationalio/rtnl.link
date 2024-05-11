@@ -21,6 +21,8 @@ type Service interface {
 	ShortURLInfo(context.Context, string) (*ShortURL, error)
 	DeleteShortURL(context.Context, string) error
 
+	// Stats/Info
+
 	// Campaigns
 
 	// Websockets
@@ -137,4 +139,21 @@ func (u *LongURL) ExpiresAt() (time.Time, error) {
 	}
 
 	return time.Time{}, ErrCannotParseExpires
+}
+
+//===========================================================================
+// Info Endpoints
+//===========================================================================
+
+type ShortcrustInfo struct {
+	Links     uint64 `json:"links"`
+	Clicks    uint64 `json:"clicks"`
+	Campaigns uint64 `json:"campaigns"`
+}
+
+func (s *ShortcrustInfo) CampaignsPerLink() float64 {
+	if s.Campaigns == 0 {
+		return 0.0
+	}
+	return float64(s.Campaigns) / float64(s.Links)
 }
