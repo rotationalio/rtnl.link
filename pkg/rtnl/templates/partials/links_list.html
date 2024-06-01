@@ -1,5 +1,9 @@
 <ul>
 {{ range .URLs }}
-  <li>{{ . }}</li>
+  <li class="pb-1">
+    <a class="underline hover:text-lapis" href="{{ .InfoURL }}">
+      {{ if .Title }}{{ .Title }}{{ else if .Target }}{{ .Target }}{{ else }}{{ .URL }}{{ end }}
+    </a>
+  </li>
 {{ end }}
 </ul>

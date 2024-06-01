@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -72,6 +74,7 @@ type LongURL struct {
 type ShortURL struct {
 	URL         string     `json:"url"`
 	AltURL      string     `json:"alt_url,omitempty"`
+	Target      string     `json:"target,omitempty"`
 	Title       string     `json:"title"`
 	Description string     `json:"description,omitempty"`
 	Visits      uint64     `json:"visits"`
@@ -139,6 +142,21 @@ func (u *LongURL) ExpiresAt() (time.Time, error) {
 	}
 
 	return time.Time{}, ErrCannotParseExpires
+}
+
+func (u *ShortURL) InfoURL() string {
+	if strings.HasPrefix(u.URL, "http") {
+		result, _ := url.JoinPath(u.URL, "info")
+		return result
+	}
+	return fmt.Sprintf("/%s/info", u.URL)
+}
+
+func (u *ShortURL) DeleteURL() string {
+	if strings.HasPrefix(u.URL, "http") {
+		return u.URL
+	}
+	return fmt.Sprintf("/%s", u.URL)
 }
 
 //===========================================================================

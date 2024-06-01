@@ -55,6 +55,7 @@ func (m *ShortURL) UnmarshalValue(data []byte) error {
 // without a configuration object.
 func (m *ShortURL) ToAPI() *api.ShortURL {
 	out := &api.ShortURL{
+		Target:      m.URL,
 		Title:       m.Title,
 		Description: m.Description,
 		Visits:      m.Visits,

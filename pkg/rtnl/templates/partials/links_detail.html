@@ -1,4 +1,5 @@
-<h2 class="text-2xl text-space-cadet font-bold mb-12">Rotational URL Info</h2>
+<h2 class="text-2xl text-space-cadet font-bold mb-2">Rotational URL Info</h2>
+<h3 class="text-lg text-space-cadet mb-12">{{ if .Info.Title }}{{ .Info.Title }}{{ else }}{{ .Info.Target }}{{end}}</h3>
 <div class="flex justify-center gap-16 mb-12">
   <div>
     <p class="font-semibold">Rotational URL:</p>
@@ -9,6 +10,7 @@
     <p>{{ .Info.AltURL }}</p>
   </div>
 </div>
+
 
 <table class="mx-auto w-11/12 overflow-auto">
   <thead>
@@ -86,6 +88,25 @@
 
 <div class="mt-16 flex justify-center gap-12">
   <a href="/links" class="block w-[140px] bg-lapis hover:bg-space-cadet text-white p-2 rounded">View All URLs</a>
-  <a href="/" class="block w-[140px] bg-dartmouth hover:bg-mint text-white p-2 rounded">Create New URL</a>
-  <button type="submit" class="block w-[140px] bg-orioles hover:bg-sinopia text-white p-2 rounded">Delete URL</button>
+  <button type="button" onclick="qrcode_modal.showModal()" class="block w-[140px] bg-dartmouth hover:bg-mint text-white p-2 rounded">Get QR Code</a>
+  <button hx-delete="{{ .Info.DeleteURL }}" hx-trigger="click" class="block w-[140px] bg-orioles hover:bg-sinopia text-white p-2 rounded">Delete URL</button>
 </div>
+
+<dialog id="qrcode_modal" class="modal">
+  <div class="modal-box max-w-2xl">
+    <div class="flex justify-between items-center">
+      <img class="m-auto" src="qrcode" alt="QRCode for short link" title="{{ .Info.Title }}" />
+    </div>
+    <div class="modal-action">
+      <a href="qrcode" target="_blank" class="btn bg-lapis hover:bg-space-cadet text-white">
+        <i class="fa fa-download"></i> Download
+      </a>
+      <form method="dialog">
+        <!-- if there is a button in form, it will close the modal -->
+        <button class="btn">
+          <i class="fa fa-close"></i> Close
+        </button>
+      </form>
+    </div>
+  </div>
+</dialog>
