@@ -16,6 +16,7 @@ require (
 	github.com/rotationalio/confire v1.0.0
 	github.com/rotationalio/go-ensign v0.12.0
 	github.com/rs/zerolog v1.31.0
+	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/stretchr/testify v1.8.4
 	github.com/twmb/murmur3 v1.1.8
 	github.com/urfave/cli/v2 v2.26.0

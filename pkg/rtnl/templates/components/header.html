@@ -1,9 +1,14 @@
 {{ define "header" }}
 <header>
   <div class="m-auto flex justify-between lg:w-[1024px]">
-    <a href="/" class="text-white" title="Rotational Link Shortner">
-      <img src="/static/images/rotational-white-logo.png" class="w-10 h-10 inline" /><span class="text-white pl-2 inline font-semibold text-xl">rtnl.link</span>
-    </a>
+    <div>
+      <a href="/" class="text-white" title="Rotational Link Shortner">
+        <img src="/static/images/rotational-white-logo.png" class="w-10 h-10 inline" /><span class="text-white pl-2 inline font-semibold text-xl">rtnl.link</span>
+      </a>
+      <a href="/links" class="inline-block text-white mx-4 p-2 rounded hover:text-air-superiority hover:font-semibold hover:underline" title="Short Links List">
+        Active Short Links
+      </a>
+    </div>
     <a id="logout" href="/logout" class="block bg-lapis text-white p-2 rounded hover:text-air-superiority hover:font-semibold hover:underline">
       <i class="fa fa-right-from-bracket"></i> Logout
     </a>

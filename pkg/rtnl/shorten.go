@@ -1,16 +1,30 @@
 package rtnl
 
 import (
+	"bytes"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/rotationalio/rtnl.link/pkg/api/v1"
 	"github.com/rotationalio/rtnl.link/pkg/base62"
+	"github.com/rotationalio/rtnl.link/pkg/rtnl/htmx"
 	"github.com/rotationalio/rtnl.link/pkg/short"
 	"github.com/rotationalio/rtnl.link/pkg/storage"
 	"github.com/rotationalio/rtnl.link/pkg/storage/models"
+
 	"github.com/rs/zerolog/log"
+	qrcode "github.com/skip2/go-qrcode"
+)
+
+const (
+	ContentDisposition = "Content-Disposition"
+	ContentType        = "Content-Type"
+	ContentLength      = "Content-Length"
+	AcceptLength       = "Accept-Length"
+	ContentTypePNG     = "image/png"
 )
 
 func (s *Server) ShortenURL(c *gin.Context) {
@@ -147,9 +161,68 @@ func (s *Server) DeleteShortURL(c *gin.Context) {
 
 	// Send the deleted event to ensign
 	s.analytics.Deleted(c.Param("id"))
-
 	log.Info().Uint64("id", sid).Msg("short url deleted")
+
+	// Redirect the user if this is an HTMX request
+	if c.NegotiateFormat(binding.MIMEJSON, binding.MIMEHTML) == binding.MIMEHTML {
+		htmx.Redirect(c, http.StatusFound, "")
+		return
+	}
+
 	c.JSON(http.StatusOK, &api.Reply{Success: true})
+}
+
+func (s *Server) ShortURLQRCode(c *gin.Context) {
+	var (
+		err error
+		sid uint64
+		qrc *qrcode.QRCode
+		uri string
+	)
+
+	// Get URL parameter from input
+	if sid, err = base62.Decode(c.Param("id")); err != nil {
+		log.Debug().Err(err).Str("input", c.Param("id")).Msg("could not parse user input")
+		c.JSON(http.StatusNotFound, api.ErrNotFoundReply)
+		return
+	}
+
+	// Lookup URL info from the database
+	var model *models.ShortURL
+	if model, err = s.db.LoadInfo(sid); err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			c.JSON(http.StatusNotFound, api.ErrorResponse("short url not found"))
+			return
+		}
+
+		log.Warn().Err(err).Uint64("id", sid).Msg("could not load url from database")
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse("unable to complete request"))
+		return
+	}
+
+	uri, _ = s.conf.MakeOriginURLs(base62.Encode(model.ID))
+	if qrc, err = qrcode.New(uri, qrcode.Medium); err != nil {
+		log.Warn().Err(err).Uint64("id", sid).Msg("could not create qr code from short url")
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse("unable to complete request"))
+		return
+	}
+
+	// Generate the data buffer
+	buf := new(bytes.Buffer)
+	if err = qrc.Write(512, buf); err != nil {
+		log.Error().Err(err).Msg("could not write png qrcode to download")
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse("unable to complete request"))
+	}
+
+	// Otherwise set disposition to download to download the file.
+	filename := base62.Encode(sid) + ".png"
+
+	// Execute the download request
+	c.Header(ContentDisposition, "attachment; filename="+filename)
+	c.Header(ContentLength, strconv.Itoa(len(buf.Bytes())))
+	c.Header(ContentType, ContentTypePNG)
+	c.Writer.WriteHeader(http.StatusOK)
+	c.Writer.Write(buf.Bytes())
 }
 
 func (s *Server) ShortURLList(c *gin.Context) {
@@ -190,6 +263,7 @@ func (s *Server) ShortURLList(c *gin.Context) {
 	for _, url := range urls {
 		out.URLs = append(out.URLs, &api.ShortURL{
 			URL:    base62.Encode(url.ID),
+			Target: url.URL,
 			Title:  url.Title,
 			Visits: url.Visits,
 		})
