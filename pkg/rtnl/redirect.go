@@ -36,9 +36,6 @@ func (s *Server) Redirect(c *gin.Context) {
 		return
 	}
 
-	// Log the click to ensign with a buffer
-	s.analytics.Click(api.Clicked(c))
-
 	log.Info().Uint64("id", sid).Str("url", url).Msg("redirecting user")
 	c.Redirect(http.StatusFound, url)
 }

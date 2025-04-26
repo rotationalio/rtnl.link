@@ -1,6 +1,6 @@
 {
   "name": "rtnl.link",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Custom URL shortening service for rtln.link and r8l.co. A simple microservice for custom URL shortening and click tracking for Rotational Labs.",
   "main": "index.js",
   "scripts": {
