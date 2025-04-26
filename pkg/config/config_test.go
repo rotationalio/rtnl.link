@@ -31,10 +31,6 @@ var testEnv = map[string]string{
 	"RTNL_AUTH_ACCESS_DURATION":  "5m",
 	"RTNL_AUTH_REFRESH_DURATION": "15m",
 	"RTNL_AUTH_REFRESH_OVERLAP":  "-5m",
-	"RTNL_ENSIGN_PATH":           "/credentials/ensign.json",
-	"RTNL_ENSIGN_CLIENT_ID":      "ensignclientid",
-	"RTNL_ENSIGN_CLIENT_SECRET":  "ensignclientsecret",
-	"RTNL_ENSIGN_TOPIC":          "shortcrust-testing",
 }
 
 func TestConfig(t *testing.T) {
@@ -65,55 +61,9 @@ func TestConfig(t *testing.T) {
 	require.Equal(t, 5*time.Minute, conf.Auth.AccessDuration)
 	require.Equal(t, 15*time.Minute, conf.Auth.RefreshDuration)
 	require.Equal(t, -5*time.Minute, conf.Auth.RefreshOverlap)
-	require.True(t, conf.Ensign.Maintenance)
-	require.Equal(t, testEnv["RTNL_ENSIGN_PATH"], conf.Ensign.Path)
-	require.Equal(t, testEnv["RTNL_ENSIGN_CLIENT_ID"], conf.Ensign.ClientID)
-	require.Equal(t, testEnv["RTNL_ENSIGN_CLIENT_SECRET"], conf.Ensign.ClientSecret)
-	require.Equal(t, testEnv["RTNL_ENSIGN_TOPIC"], conf.Ensign.Topic)
 
 	// Ensure the sentry release is correctly set
 	// require.True(t, strings.HasPrefix(conf.Sentry.GetRelease(), "rtnl@"))
-}
-
-func TestEnsignValidation(t *testing.T) {
-	testCases := []struct {
-		conf config.EnsignConfig
-		err  error
-	}{
-		{
-			config.EnsignConfig{},
-			config.ErrInvalidEnsignCredentials,
-		},
-		{
-			config.EnsignConfig{ClientID: "foo"},
-			config.ErrInvalidEnsignCredentials,
-		},
-		{
-			config.EnsignConfig{ClientSecret: "foo"},
-			config.ErrInvalidEnsignCredentials,
-		},
-		{
-			config.EnsignConfig{Path: "credentials.json"},
-			nil,
-		},
-		{
-			config.EnsignConfig{ClientID: "foo", ClientSecret: "bar"},
-			nil,
-		},
-		{
-			config.EnsignConfig{Path: "zap", ClientID: "foo", ClientSecret: "bar"},
-			nil,
-		},
-	}
-
-	for i, tc := range testCases {
-		err := tc.conf.Validate()
-		if tc.err != nil {
-			require.ErrorIs(t, err, tc.err, "test case %d failed", i)
-		} else {
-			require.NoError(t, err, "test case %d failed", i)
-		}
-	}
 }
 
 // Returns the current environment for the specified keys, or if no keys are specified

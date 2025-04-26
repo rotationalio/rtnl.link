@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"os/signal"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -140,15 +139,6 @@ func main() {
 			Usage:     "delete a short url so that it is no longer used",
 			ArgsUsage: "urlID [urlID ...]",
 			Action:    delete,
-			Before:    makeClient,
-			Flags:     []cli.Flag{},
-		},
-		{
-			Name:      "updates",
-			Category:  "client",
-			Usage:     "subscribe to updates from the rtnl server",
-			ArgsUsage: "[urlID]",
-			Action:    updates,
 			Before:    makeClient,
 			Flags:     []cli.Flag{},
 		},
@@ -425,40 +415,6 @@ func delete(c *cli.Context) (err error) {
 		fmt.Printf("short url %s has been deleted\n", sid)
 	}
 	return nil
-}
-
-func updates(c *cli.Context) (err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	var linkID string
-	if c.NArg() > 0 {
-		if c.NArg() > 1 {
-			return cli.Exit("only one link url can be specified", 1)
-		}
-		linkID = c.Args().First()
-	}
-
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt)
-
-	updates, err := svc.Updates(ctx, linkID)
-	if err != nil {
-		return cli.Exit(err, 1)
-	}
-
-	for {
-		select {
-		case update := <-updates:
-			data, err := json.Marshal(update)
-			if err != nil {
-				return cli.Exit(err, 1)
-			}
-			fmt.Println(string(data))
-		case <-interrupt:
-			return nil
-		}
-	}
 }
 
 func status(c *cli.Context) (err error) {
