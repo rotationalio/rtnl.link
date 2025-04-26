@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/google/go-querystring/query"
-	"github.com/gorilla/websocket"
 	"github.com/rotationalio/rtnl.link/pkg/api/v1"
 )
 
@@ -143,55 +142,6 @@ func (c *APIv1) ShortURLList(ctx context.Context, page *api.PageQuery) (out *api
 	}
 
 	return out, nil
-}
-
-// TODO: figure out how to gracefully close the connection!
-func (c *APIv1) Updates(ctx context.Context, id string) (_ <-chan *api.Click, err error) {
-	path := "/v1/updates"
-	if id != "" {
-		path = fmt.Sprintf("/v1/links/%s/updates", id)
-	}
-
-	// Set the headers on the request
-	header := http.Header{}
-	header.Add("User-Agent", userAgent)
-	header.Add("Accept", accept)
-	header.Add("Accept-Language", acceptLang)
-	header.Add("Accept-Encoding", acceptEncode)
-	header.Add("Content-Type", contentType)
-
-	// Add API Key if available
-	if c.apiKey != "" {
-		header.Add("Authorization", "Bearer "+c.apiKey)
-	}
-
-	// Create the websockets endpoint
-	endpoint := c.endpoint.ResolveReference(&url.URL{Path: path})
-	endpoint.Scheme = "ws"
-
-	conn, _, err := websocket.DefaultDialer.Dial(endpoint.String(), header)
-	if err != nil {
-		return nil, err
-	}
-
-	updates := make(chan *api.Click, 10)
-
-	// Start the reader go routine
-	go func(updates chan<- *api.Click) {
-		defer conn.Close()
-		defer close(updates)
-
-		for {
-			click := &api.Click{}
-			if err = conn.ReadJSON(click); err != nil {
-				return
-			}
-			updates <- click
-		}
-
-	}(updates)
-
-	return updates, nil
 }
 
 //===========================================================================

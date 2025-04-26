@@ -26,9 +26,6 @@ type Service interface {
 	// Stats/Info
 
 	// Campaigns
-
-	// Websockets
-	Updates(context.Context, string) (<-chan *Click, error)
 }
 
 //===========================================================================

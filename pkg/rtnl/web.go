@@ -106,7 +106,7 @@ func (s *Server) Updates(c *gin.Context) {
 	}
 	defer conn.Close()
 
-	// Parse the URL if given for filtering (or not) the Ensign stream
+	// Parse the URL if given for filtering the stream
 	linkID = c.Param("id")
 	log.Info().Str("link_id", linkID).Msg("updates websocket opened")
 
